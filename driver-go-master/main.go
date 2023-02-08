@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"time"
-)
+import "Driver-go/Elevator"
 
 /*
 func main() {
@@ -59,8 +56,19 @@ func main() {
 		}
 	}
 */
+
 func main() {
-	timerr = time.NewTimer(3 * time.Second)
-	<-timerr.C
-	fmt.Println("timer boner")
-}
+	c := make(chan bool)
+	go Elevator.Timer_start(3, c)
+	for {
+		select {
+		case <-c:
+			print("yolo")
+		}
+		default
+
+
+
+
+
+
