@@ -29,8 +29,8 @@ type Config struct {
 
 type Elevator struct {
 	floor int
-	//dirn Dirn
-	//requests int-list
+	dirn Dirn
+	requests [N_FLOORS][N_BUTTONS] int
 	behavior ElevatorBehavior
 	config   Config
 }

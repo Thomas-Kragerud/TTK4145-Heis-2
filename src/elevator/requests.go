@@ -5,41 +5,41 @@ type DrinBehaviorPair struct {
 	behavior ElevatorBehavior
 }
 
-func requests_above(e Elevator) int {
+func requests_above(e Elevator) bool {
 	for f := e.floor + 1; f < N_FLOORS; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
 			if /* e.requests[f][btn]*/ 1 == 1 {
-				return 1
+				return true
 			}
 		}
 	}
-	return 0
+	return false
 }
 
-func requests_below(e Elevator) int {
+func requests_below(e Elevator) bool {
 	for f := 0; f < e.floor; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
-			if /* e.requests[f][btn]*/ 1 == 1 {
-				return 1
+			if e.requests[f][btn] == 1{
+				return true
 			}
 		}
 	}
-	return 0
+	return false
 }
 
-func requests_here(e Elevator) int {
+func requests_here(e Elevator) bool {
 	for btn := 0; btn < N_BUTTONS; btn++ {
-		if e.requests[e.floor][btn] {
-			return 1
+		if e.requests[e.floor][btn] == 1 {
+			return true
 		}
 	}
-	return 0
+	return false
 }
 
 func requests_chooseDirection(e Elevator) DrinBehaviorPair {
 	switch e.dirn {
-	case D_UP:
-		if requests_above(e) {
+	case D_Up:
+		if requests_above(e)  {
 			return DrinBehaviorPair{dirn: D_Up, behavior: EB_Moving}
 		} else {
 			if requests_here(e) {
@@ -53,7 +53,7 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair {
 			}
 		}
 
-	case D_DOWN:
+	case D_Down:
 		if requests_below(e) {
 			return DrinBehaviorPair{dirn: D_Down, behavior: EB_Moving}
 		} else {
@@ -68,7 +68,7 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair {
 			}
 		}
 
-	case D_STOP:
+	case D_Stop:
 		if requests_here(e) {
 			return DrinBehaviorPair{dirn: D_Stop, behavior: EB_DoorOpen}
 		} else {
@@ -85,4 +85,13 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair {
 	default:
 		return DrinBehaviorPair{dirn: D_Stop, behavior: EB_Idle}
 	}
+}
+
+func reguests_shouldStop(e Elevator) int {
+	switch e.dirn {
+	case D_Down:
+		//return e.requests[e.floor][B_HallDown] || e.requests[e.floor][B_Cab] || !requests_below(e)
+	}
+	default:
+		return 1
 }
