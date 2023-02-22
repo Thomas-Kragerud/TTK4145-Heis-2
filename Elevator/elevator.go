@@ -1,7 +1,7 @@
 package Elevator
 
 /*
-Oskar first commit dummy
+New branch oskar branch dummy
 Must fix import og fil greier
 Har ikke dirnGo first searches for package directory inside GOROOT/src directory and if it doesn’t find the package, then it looks for GOPATH/src. Since, fmt package is part of Go’s standard library which is located in GOROOT/src, it is imported from there. But since Go cannot find greet package inside GOROOT, it will lookup inside GOPATH/src and we have it there. og reguests greiene
 
