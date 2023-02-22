@@ -1,5 +1,7 @@
 package elevator
 
+//HEI!
+
 type DrinBehaviorPair struct {
 	dirn     Dirn
 	behavior ElevatorBehavior
