@@ -1,6 +1,0 @@
-[submodule "Driver-go"]
-	path = Driver-go
-	url = https://github.com/TTK4145/Driver-go.git
-[submodule "Network-go"]
-	path = Network-go
-	url = https://github.com/TTK4145/Network-go.git

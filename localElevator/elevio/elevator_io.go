@@ -5,7 +5,8 @@ import "sync"
 import "net"
 import "fmt"
 
-
+const N_FLOORS = 4
+const N_BUTTONS = 3
 
 const _pollRate = 20 * time.Millisecond
 
@@ -34,8 +35,6 @@ type ButtonEvent struct {
 	Floor  int
 	Button ButtonType
 }
-
-
 
 func Init(addr string, numFloors int) {
 	if _initialized {

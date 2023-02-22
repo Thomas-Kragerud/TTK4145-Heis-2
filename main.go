@@ -1,6 +1,6 @@
 package main
 
-import "Driver-go/elevio"
+import "Project/src/elevio"
 import "fmt"
 
 func main(){
@@ -22,7 +22,7 @@ func main(){
     go elevio.PollObstructionSwitch(drv_obstr)
     go elevio.PollStopButton(drv_stop)
     
-    
+
     for {
         select {
         case a := <- drv_buttons:
