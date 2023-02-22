@@ -1,4 +1,4 @@
-package Elevator
+package elevator
 
 /*
 
@@ -10,21 +10,21 @@ Har ikke dirnGo first searches for package directory inside GOROOT/src directory
 type ElevatorBehavior string
 
 const (
-	EB_Idle ElevatorBehavior = "EB_Idle"
+	EB_Idle     ElevatorBehavior = "EB_Idle"
 	EB_DoorOpen ElevatorBehavior = "EB_DoorOpen"
-	EB_Moving ElevatorBehavior = "EB_Moving"
+	EB_Moving   ElevatorBehavior = "EB_Moving"
 )
 
 type ClearRequestVariant string
 
 const (
-	CV_ALL ClearRequestVariant = "all"
+	CV_ALL   ClearRequestVariant = "all"
 	CV_InDir ClearRequestVariant = "inDir"
 )
 
 type Config struct {
 	clearRequestVariant ClearRequestVariant
-	doorOpenDuration uint32 
+	doorOpenDuration    uint32
 }
 
 type Elevator struct {
@@ -32,7 +32,7 @@ type Elevator struct {
 	//dirn Dirn
 	//requests int-list
 	behavior ElevatorBehavior
-	config Config
+	config   Config
 }
 
 //Might ad later
@@ -45,14 +45,13 @@ func elevator_print(es Elevator) {
 func eb_toStrinng(ElevatorBehavior eb) {
 
 }
-*/  
+*/
 
 func elevator_uninitialized() Elevator {
 	config := Config{clearRequestVariant: CV_ALL, doorOpenDuration: 3.0}
 	elevator := Elevator{floor: -1,
-						/*dirn: D_stop, 
-						behavior: EB_Idle,*/
-						config: config}
-	return elevator 
+		/*dirn: D_stop,
+		behavior: EB_Idle,*/
+		config: config}
+	return elevator
 }
-

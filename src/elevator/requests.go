@@ -1,14 +1,14 @@
-package Elevator
+package elevator
 
 type DrinBehaviorPair struct {
-	dirn Dirn
+	dirn     Dirn
 	behavior ElevatorBehavior
 }
 
 func requests_above(e Elevator) int {
-	for f := e.floor + 1; f < N_FLOORS; f++{
+	for f := e.floor + 1; f < N_FLOORS; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
-			if /* e.requests[f][btn]*/1 ==1 {
+			if /* e.requests[f][btn]*/ 1 == 1 {
 				return 1
 			}
 		}
@@ -17,9 +17,9 @@ func requests_above(e Elevator) int {
 }
 
 func requests_below(e Elevator) int {
-	for f := 0; f < e.floor; f++{
+	for f := 0; f < e.floor; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
-			if /* e.requests[f][btn]*/1 ==1 {
+			if /* e.requests[f][btn]*/ 1 == 1 {
 				return 1
 			}
 		}
@@ -28,7 +28,7 @@ func requests_below(e Elevator) int {
 }
 
 func requests_here(e Elevator) int {
-	for btn := 0; btn < N_BUTTONS; btn++{
+	for btn := 0; btn < N_BUTTONS; btn++ {
 		if e.requests[e.floor][btn] {
 			return 1
 		}
@@ -36,7 +36,7 @@ func requests_here(e Elevator) int {
 	return 0
 }
 
-func requests_chooseDirection(e Elevator) DrinBehaviorPair{
+func requests_chooseDirection(e Elevator) DrinBehaviorPair {
 	switch e.dirn {
 	case D_UP:
 		if requests_above(e) {
@@ -44,7 +44,7 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair{
 		} else {
 			if requests_here(e) {
 				return DrinBehaviorPair{dirn: D_Down, behavior: EB_DoorOpen}
-			} else  {
+			} else {
 				if requests_below(e) {
 					return DrinBehaviorPair{dirn: D_Down, behavior: EB_Moving}
 				} else {
@@ -59,7 +59,7 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair{
 		} else {
 			if requests_here(e) {
 				return DrinBehaviorPair{dirn: D_Up, behavior: EB_DoorOpen}
-			} else  {
+			} else {
 				if requests_above(e) {
 					return DrinBehaviorPair{dirn: D_Up, behavior: EB_Moving}
 				} else {
@@ -74,7 +74,7 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair{
 		} else {
 			if requests_above(e) {
 				return DrinBehaviorPair{dirn: D_Up, behavior: EB_Moving}
-			} else  {
+			} else {
 				if requests_below(e) {
 					return DrinBehaviorPair{dirn: D_Down, behavior: EB_Moving}
 				} else {
@@ -83,6 +83,6 @@ func requests_chooseDirection(e Elevator) DrinBehaviorPair{
 			}
 		}
 	default:
-		return DrinBehaviorPair{dirn: D_Stop,behavior: EB_Idle}
+		return DrinBehaviorPair{dirn: D_Stop, behavior: EB_Idle}
 	}
 }
