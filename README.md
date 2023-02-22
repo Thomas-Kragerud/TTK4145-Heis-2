@@ -1,3 +1,7 @@
+Huskeregel! må skrive git commit "link" --recursive 
+for at man skal clone ordentlig.
+
+
 Elevator Project
 ================
 
