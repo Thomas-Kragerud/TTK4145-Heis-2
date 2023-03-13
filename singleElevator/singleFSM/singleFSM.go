@@ -45,7 +45,7 @@ func FSM(
 	fmt.Printf("Nu kjør me\n")
 
 	doorTimer := time.NewTimer(0) // Initialise timer
-	updateTimer := time.NewTimer(0)
+	//updateTimer := time.NewTimer(0)
 
 	// Main loop for FSM
 	for {
@@ -156,9 +156,9 @@ func FSM(
 				}
 
 			}
-		case <-updateTimer.C:
-			chMsgToNetwork <- *eObj
-			updateTimer.Reset(500 * time.Millisecond)
+			//case <-updateTimer.C:
+			//	chMsgToNetwork <- *eObj
+			//	updateTimer.Reset(500 * time.Millisecond)
 		}
 	}
 }

@@ -57,11 +57,12 @@ func main() {
 				newElevator := updateElevator{elevCopy, true}
 				elevators[elevCopy.Id] = newElevator
 				fmt.Printf("Added new elevator with id %s \n", elevCopy.Id)
-			} else if e, ok := elevators[elevCopy.Id]; ok && !e.Alive {
-				chRecovElevToNet <- e.Elevator
-				e.Alive = true
-				fmt.Printf("Elevator resurected %s, states sent \n", e.Elevator.Id)
-				elevators[e.Elevator.Id] = e
+				//} else if e, ok := elevators[elevCopy.Id]; ok && !e.Alive {
+				//	chRecovElevToNet <- e.Elevator
+				//	e.Alive = true
+				//	fmt.Printf("Elevator resurected %s, states sent \n", e.Elevator.Id)
+				//	elevators[e.Elevator.Id] = e
+				//  Må update states 24/7 for at denne skal funke (updateTimer i FSM)
 			} else {
 				elevators[elevCopy.Id] = updateElevator{elevCopy, true}
 				fmt.Printf("Recived updated states \n")
@@ -80,12 +81,12 @@ func main() {
 				}
 			}
 
-			//if e, ok := elevators[p.New]; ok && !e.Alive {
-			//	chRecovElevToNet <- e.Elevator
-			//	e.Alive = true
-			//	fmt.Printf("Elevator resurected [Ping] %s, states sent \n", e.Elevator.Id)
-			//	elevators[e.Elevator.Id] = e
-			//}
+			if e, ok := elevators[p.New]; ok && !e.Alive {
+				chRecovElevToNet <- e.Elevator
+				e.Alive = true
+				fmt.Printf("Elevator resurected [Ping] %s, states sent \n", e.Elevator.Id)
+				elevators[e.Elevator.Id] = e
+			}
 
 		}
 	}
