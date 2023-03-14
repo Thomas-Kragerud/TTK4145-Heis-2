@@ -31,12 +31,12 @@ func Distribute(
 	for {
 		select {
 		case elevObj := <-chMessageFromNetwork:
-			// Hvis chMessage er heisen selv
+			// If -message received is "this" elevator
 			if elevObj.Id == pid {
 				thisElevatorCopy = elevObj
-				_ = thisElevatorCopy // Supress error message
+				_ = thisElevatorCopy // Suppress error message
 			}
-			// Hvis ikke sett denne heisen før
+			// If -have not seen this elevator before
 			if _, ok := elevatorMap[elevObj.Id]; !ok {
 				newElevator := distElevator{elevObj, true}
 				elevatorMap[elevObj.Id] = newElevator
@@ -53,6 +53,7 @@ func Distribute(
 			fmt.Printf(" New: %q\n", p.New)
 			fmt.Printf(" Lost: %q\n", p.Lost)
 
+			// Set alive to false for lost elevators
 			for _, val := range p.Lost {
 				if e, ok := elevatorMap[val]; ok {
 					e.Alive = false
@@ -60,7 +61,7 @@ func Distribute(
 				}
 			}
 
-			// If id exist in map and is sett to not alive
+			// Elevator is reborn
 			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
 				if e.Elevator.Id == pid {
 					fmt.Printf("Jeg så meg selv dø??\n")
@@ -71,6 +72,7 @@ func Distribute(
 			}
 
 		case recoverElev := <-chRecovElevFromNet:
+			// "This" elevator is reborn
 			if recoverElev.Id == pid {
 				fmt.Printf("Forsøk og recover\n")
 				e := recoverElev
