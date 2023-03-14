@@ -15,10 +15,10 @@ type distElevator struct {
 
 // ???Når vi deler states. Burde jeg dele alt jeg vet om alle andre
 // elle holder det å dele meg selv
-
+// Kan både sende og motta button events, er det litt urutt elle?
 func Distribute(
 	pid string,
-	chButtons chan<- elevio.ButtonEvent,
+	chButtons chan elevio.ButtonEvent,
 	chMessageFromNetwork <-chan elevator.Elevator,
 	chPeerUpdate <-chan peers.PeerUpdate,
 	chRecovElevToNet chan<- elevator.Elevator,
@@ -81,6 +81,7 @@ func Distribute(
 						fmt.Printf("Looped \n")
 						if e.Orders[f][btn] {
 							fmt.Printf("Sender gamle states \n")
+							// Send button events
 							chButtons <- elevio.ButtonEvent{
 								Floor:  f,
 								Button: elevio.ButtonType(int(btn))}
@@ -89,6 +90,9 @@ func Distribute(
 					}
 				}
 			}
+
+			//case localBtn := <-chButtons:
+
 		}
 	}
 

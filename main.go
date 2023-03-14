@@ -4,9 +4,9 @@ import (
 	"Project/distributor"
 	"Project/network/bcast"
 	"Project/network/peers"
+	"Project/singleElevator/FSM"
 	"Project/singleElevator/elevator"
 	"Project/singleElevator/elevio"
-	"Project/singleElevator/singleFSM"
 	"flag"
 )
 
@@ -26,7 +26,6 @@ func main() {
 	// ****** Set up channels ******
 
 	// Channels for distribution
-	chButtons := make(chan elevio.ButtonEvent)
 	chMsgToNetwork := make(chan elevator.Elevator)
 	chMsgFromNetwork := make(chan elevator.Elevator)
 	chRecovElevToNet := make(chan elevator.Elevator)
@@ -45,6 +44,7 @@ func main() {
 	chAtFloor := make(chan int)
 	chObst := make(chan bool)
 	chStop := make(chan bool)
+	chButtons := make(chan elevio.ButtonEvent)
 
 	// ****** Go routines ******
 
@@ -57,29 +57,6 @@ func main() {
 	// poll button press from other
 	go bcast.Transmitter(udpRecover, chRecovElevToNet)
 	go bcast.Receiver(udpRecover, chRecovElevFromNet)
-
-	//go func() {
-	//	for {
-	//		select {
-	//		case recovElevat := <-chRecovElevFromNet:
-	//			fmt.Printf("Forsøk og recover\n")
-	//			e := recovElevat
-	//			for f := range e.Orders {
-	//				for btn := range e.Orders[f] {
-	//					fmt.Printf("Looped \n")
-	//					if e.Orders[f][btn] {
-	//						fmt.Printf("Sender gamle states \n")
-	//						chButtons <- elevio.ButtonEvent{
-	//							Floor:  f,
-	//							Button: elevio.ButtonType(int(btn))}
-	//						time.Sleep(50 * time.Millisecond)
-	//					}
-	//
-	//				}
-	//			}
-	//		}
-	//	}
-	//}()
 
 	// Network
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
@@ -96,7 +73,7 @@ func main() {
 		chRecovElevFromNet)
 
 	// Go fms
-	go singleFSM.FSM(
+	go FSM.FSM(
 		port,
 		id,
 		chMsgToNetwork,
