@@ -1,21 +1,27 @@
 package main
 
 import (
+	"Project/distributor"
 	"Project/network/bcast"
 	"Project/network/peers"
 	"Project/singleElevator/elevator"
 	"Project/singleElevator/elevio"
 	"Project/singleElevator/singleFSM"
-	"fmt"
-	"time"
+	"flag"
 )
 
 func main() {
 	// parameter setting
-	var port = "8080"
+
 	var udpPeer = 6000
 	var updData = 6200
 	var udpRecover = 6400
+	var id string
+	var port string
+
+	flag.StringVar(&port, "port", "", "Port of this elevator")
+	flag.StringVar(&id, "id", "", "id of this elevator")
+	flag.Parse()
 
 	// ****** Set up channels ******
 
@@ -51,36 +57,43 @@ func main() {
 	// poll button press from other
 	go bcast.Transmitter(udpRecover, chRecovElevToNet)
 	go bcast.Receiver(udpRecover, chRecovElevFromNet)
-	go func() {
-		for {
-			select {
-			case recovElevat := <-chRecovElevFromNet:
-				fmt.Printf("Forsøk og recover\n")
-				e := recovElevat
-				for f := range e.Orders {
-					for btn := range e.Orders[f] {
-						fmt.Printf("Looped \n")
-						if e.Orders[f][btn] {
-							fmt.Printf("Sender gamle states \n")
-							chButtons <- elevio.ButtonEvent{
-								Floor:  f,
-								Button: elevio.ButtonType(int(btn))}
-							time.Sleep(50 * time.Millisecond)
-						}
 
-					}
-				}
-			}
-		}
-	}()
+	//go func() {
+	//	for {
+	//		select {
+	//		case recovElevat := <-chRecovElevFromNet:
+	//			fmt.Printf("Forsøk og recover\n")
+	//			e := recovElevat
+	//			for f := range e.Orders {
+	//				for btn := range e.Orders[f] {
+	//					fmt.Printf("Looped \n")
+	//					if e.Orders[f][btn] {
+	//						fmt.Printf("Sender gamle states \n")
+	//						chButtons <- elevio.ButtonEvent{
+	//							Floor:  f,
+	//							Button: elevio.ButtonType(int(btn))}
+	//						time.Sleep(50 * time.Millisecond)
+	//					}
+	//
+	//				}
+	//			}
+	//		}
+	//	}
+	//}()
 
 	// Network
-	var id = "69"
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
 	go peers.Receiver(udpPeer, chPeerUpdate)
 
 	go bcast.Transmitter(updData, chMsgToNetwork)
 	go bcast.Receiver(updData, chMsgFromNetwork)
+
+	go distributor.Distribute(id,
+		chButtons,
+		chMsgFromNetwork,
+		chPeerUpdate,
+		chRecovElevToNet,
+		chRecovElevFromNet)
 
 	// Go fms
 	go singleFSM.FSM(

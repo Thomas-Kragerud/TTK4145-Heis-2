@@ -44,7 +44,7 @@ type Elevator struct {
 }
 
 // Init initialize the elevator
-func (e *Elevator) Init(Id string, chOldElevator <-chan Elevator) {
+func (e *Elevator) Init(Id string) {
 	// Create the order matrix
 	e.Orders = make([][]bool, config.NumFloors)
 	for floor := range e.Orders {

@@ -27,21 +27,25 @@ func FSM(
 	// Init elevator
 	elevio.Init("localhost:"+port, 4)
 	eObj := new(elevator.Elevator)
-	eObj.Init(pid, chMsgFromNetwork)
+	eObj.Init(pid)
 	//chMsgToNetwork <- *eObj
 
-	// Init elevator position
+	// Move elevator to closest "certain" floor
 	elevio.SetDoorOpenLamp(false)
-	elevio.SetMotorDirection(elevio.MD_Down)
-	for {
-		floor := <-chAtFloor
-		if floor != 0 {
+	floor := <-chAtFloor
+	if floor != 0 {
+		for p := floor; p == floor; p = <-chAtFloor {
 			elevio.SetMotorDirection(elevio.MD_Down)
-		} else {
-			elevio.SetMotorDirection(elevio.MD_Stop)
-			break
 		}
+		eObj.SetFloor(-1)
+	} else {
+		for p := floor; p == floor; p = <-chAtFloor {
+			elevio.SetMotorDirection(elevio.MD_Up)
+		}
+		eObj.SetFloor(floor + 1)
 	}
+
+	elevio.SetMotorDirection(elevio.MD_Stop)
 	fmt.Printf("Nu kjør me\n")
 
 	doorTimer := time.NewTimer(0) // Initialise timer
