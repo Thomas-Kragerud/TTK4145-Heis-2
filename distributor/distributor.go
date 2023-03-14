@@ -68,7 +68,7 @@ func Distribute(
 				}
 				e.Alive = true
 				elevatorMap[e.Elevator.Id] = e
-				chRecovElevToNet <- e.Elevator
+				chRecovElevToNet <- e.Elevator // Possible lock
 			}
 
 		case recoverElev := <-chRecovElevFromNet:
@@ -81,7 +81,7 @@ func Distribute(
 						fmt.Printf("Looped \n")
 						if e.Orders[f][btn] {
 							fmt.Printf("Sender gamle states \n")
-							// Send button events
+							// Send button events Possible lock
 							chButtons <- elevio.ButtonEvent{
 								Floor:  f,
 								Button: elevio.ButtonType(int(btn))}

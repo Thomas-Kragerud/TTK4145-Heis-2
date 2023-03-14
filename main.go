@@ -12,7 +12,6 @@ import (
 
 func main() {
 	// parameter setting
-
 	var udpPeer = 6000
 	var updData = 6200
 	var udpRecover = 6400

@@ -27,10 +27,11 @@ func FSM(
 
 	// Move elevator to closest "certain" floor
 	elevio.SetDoorOpenLamp(false)
+	elevio.SetMotorDirection(elevio.MD_Down)
 	floor := <-chAtFloor
 	if floor != 0 {
 		for p := floor; p == floor; p = <-chAtFloor {
-			elevio.SetMotorDirection(elevio.MD_Down)
+			continue // continue going down
 		}
 		eObj.SetFloor(floor - 1)
 	} else {
@@ -73,6 +74,7 @@ func FSM(
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
+				chMsgToNetwork <- *eObj
 				break
 
 			case elevator.DoorOpen:
@@ -81,6 +83,7 @@ func FSM(
 					doorTimer.Reset(3 * time.Second)
 				} else {
 					eObj.AddOrder(btnEvent)
+					chMsgToNetwork <- *eObj
 				}
 				break
 			}

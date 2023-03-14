@@ -32,6 +32,7 @@ func FSM(
 
 	// Move elevator to closest "certain" floor
 	elevio.SetDoorOpenLamp(false)
+	elevio.SetMotorDirection(elevio.MD_Down)
 	floor := <-chAtFloor
 	if floor != 0 {
 		for p := floor; p == floor; p = <-chAtFloor {
