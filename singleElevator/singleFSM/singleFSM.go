@@ -37,7 +37,7 @@ func FSM(
 		for p := floor; p == floor; p = <-chAtFloor {
 			elevio.SetMotorDirection(elevio.MD_Down)
 		}
-		eObj.SetFloor(-1)
+		eObj.SetFloor(floor - 1)
 	} else {
 		for p := floor; p == floor; p = <-chAtFloor {
 			elevio.SetMotorDirection(elevio.MD_Up)
