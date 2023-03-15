@@ -5,7 +5,7 @@ package elevator
 
 import (
 	"Project/config"
-	"Project/singleElevator/elevio"
+	"Project/elevio"
 	"fmt"
 )
 

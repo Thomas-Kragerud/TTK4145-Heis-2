@@ -2,11 +2,11 @@ package main
 
 import (
 	"Project/distributor"
+	"Project/elevio"
+	"Project/localElevator/FSM"
+	"Project/localElevator/elevator"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"Project/singleElevator/FSM"
-	"Project/singleElevator/elevator"
-	"Project/singleElevator/elevio"
 	"flag"
 )
 

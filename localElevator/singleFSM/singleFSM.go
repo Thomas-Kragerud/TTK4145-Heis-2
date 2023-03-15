@@ -2,8 +2,8 @@ package singleFSM
 
 import (
 	"Project/config"
-	"Project/singleElevator/elevator"
-	"Project/singleElevator/elevio"
+	"Project/elevio"
+	"Project/localElevator/elevator"
 	"fmt"
 	"os"
 	"reflect"

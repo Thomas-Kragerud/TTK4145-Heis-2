@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Project/singleElevator/elevio"
+	"Project/elevio"
 	"fmt"
 )
 

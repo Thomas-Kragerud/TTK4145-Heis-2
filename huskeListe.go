@@ -3,9 +3,9 @@
 package main
 
 import (
+	elevator "Project/localElevator/elevator"
 	"Project/network/bcast"
 	"Project/network/peers"
-	elevator "Project/singleElevator/elevator"
 	"fmt"
 	"reflect"
 )

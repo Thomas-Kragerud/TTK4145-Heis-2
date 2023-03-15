@@ -1,9 +1,9 @@
 package distributor
 
 import (
+	"Project/elevio"
+	"Project/localElevator/elevator"
 	"Project/network/peers"
-	"Project/singleElevator/elevator"
-	"Project/singleElevator/elevio"
 	"fmt"
 	"time"
 )
