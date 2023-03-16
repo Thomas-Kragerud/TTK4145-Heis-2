@@ -7,7 +7,7 @@ import (
 	"Project/localElevator/elevator"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"flag"
+	//"flag"
 )
 
 //NILS VAR HER!
@@ -20,9 +20,9 @@ func main() {
 	var id string
 	var port string
 
-	flag.StringVar(&port, "port", "", "Port of this elevator")
-	flag.StringVar(&id, "id", "", "id of this elevator")
-	flag.Parse()
+	//flag.StringVar(&port, "port", "", "Port of this elevator")
+	//flag.StringVar(&id, "id", "", "id of this elevator")
+	//flag.Parse()
 
 	// ****** Set up channels ******
 
@@ -92,5 +92,4 @@ func main() {
 
 	// can use empty select to block main thread
 	select {}
-
 }

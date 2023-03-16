@@ -20,7 +20,7 @@ func FSM(
 	chStop <-chan bool) {
 
 	// Init elevator
-	elevio.Init("localhost:"+port, 4)
+	elevio.Init("localhost:15657",4)
 	eObj := new(elevator.Elevator)
 	eObj.Init(pid)
 	//chMsgToNetwork <- *eObj
@@ -50,6 +50,7 @@ func FSM(
 	// Main loop for FSM
 	for {
 		eObj.UpdateLights()
+		//fmt.Printf((Obj.State)_stateToString)
 		select {
 		case btnEvent := <-chButtons:
 			switch eObj.State {
@@ -183,7 +184,7 @@ func simple_next_direction(e *elevator.Elevator) elevio.MotorDirection {
 
 		case elevio.MD_Down:
 			for f := 0; f < e.Floor; f++ {
-				if e.Orders[f][elevio.MD_Up] || e.Orders[f][elevio.BT_Cab] {
+				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] {
 					return elevio.MD_Down
 				}
 			}
@@ -207,9 +208,9 @@ func valid_stop(e *elevator.Elevator) bool {
 		return true
 	} else if e.Orders[e.Floor][elevio.BT_HallDown] && e.Dir == elevio.MD_Down {
 		return true
-	} else if e.Orders[e.Floor][elevio.BT_HallUp] && e.Dir == elevio.MD_Down && !cab_order_beyond(e) {
+	} else if e.Orders[e.Floor][elevio.BT_HallUp] && e.Dir == elevio.MD_Down && !cab_order_beyond(e) && !hall_order_in_oposite_dir_beyond(e){
 		return true
-	} else if e.Orders[e.Floor][elevio.BT_HallDown] && e.Dir == elevio.MD_Up && !cab_order_beyond(e) {
+	} else if e.Orders[e.Floor][elevio.BT_HallDown] && e.Dir == elevio.MD_Up && !cab_order_beyond(e) && !hall_order_in_oposite_dir_beyond(e){
 		return true
 	} else {
 		return false
@@ -229,6 +230,30 @@ func cab_order_beyond(e *elevator.Elevator) bool {
 	case elevio.MD_Down:
 		for f := 0; f < e.Floor; f++ {
 			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallDown] {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func hall_order_in_oposite_dir_beyond(e *elevator.Elevator) bool {
+	switch e.Dir {
+	case elevio.MD_Up:
+		for f := e.Floor; f < config.NumFloors-1; f++ {
+			fmt.Println(f)
+			fmt.Println(config.NumFloors)
+			if e.Orders[f][elevio.BT_HallDown] {
+				fmt.Printf("HEIHAISHDA")
+				return true
+			}
+		}
+		return false
+	case elevio.MD_Down:
+		for f := 0; f < e.Floor; f++ {
+			if e.Orders[f][elevio.BT_HallUp] {
 				return true
 			}
 		}
