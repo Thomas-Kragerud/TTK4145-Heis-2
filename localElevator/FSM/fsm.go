@@ -183,7 +183,7 @@ func simple_next_direction(e *elevator.Elevator) elevio.MotorDirection {
 
 		case elevio.MD_Down:
 			for f := 0; f < e.Floor; f++ {
-				if e.Orders[f][elevio.MD_Up] || e.Orders[f][elevio.BT_Cab] {
+				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] {
 					return elevio.MD_Down
 				}
 			}
