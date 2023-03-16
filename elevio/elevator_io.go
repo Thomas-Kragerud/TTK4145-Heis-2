@@ -27,10 +27,11 @@ const (
 	MD_Stop                = 0
 )
 
+// _motorDirectionToString Modified to work with assigner format
 var _motorDirectionToString = map[MotorDirection]string{
-	MD_Up:   "MD_UP",
-	MD_Down: "MD_Down",
-	MD_Stop: "MD_Stop",
+	MD_Up:   "up",
+	MD_Down: "down",
+	MD_Stop: "stop",
 }
 
 // ButtonType The different button presses

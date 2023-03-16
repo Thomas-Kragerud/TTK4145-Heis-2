@@ -18,9 +18,9 @@ const (
 )
 
 var _stateToString = map[elevatorState]string{
-	Idle:     "Idle",
-	DoorOpen: "DoorOpen",
-	Moving:   "Moving",
+	Idle:     "idle",
+	DoorOpen: "doorOpen",
+	Moving:   "moving",
 }
 
 type ElevatorInterface interface {
@@ -85,6 +85,20 @@ func (e *Elevator) UpdateLights() {
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, floor, e.Orders[floor][b])
 		}
+	}
+}
+
+// ToSendElev converts elevator object to a sendElev object
+func (e *Elevator) ToSendElev() config.SendElev {
+	var cabReq []bool
+	for _, floor := range e.Orders {
+		cabReq = append(cabReq, floor[elevio.BT_Cab])
+	}
+	return config.SendElev{
+		Behaviour:   _stateToString[e.State],
+		Floor:       e.Floor,
+		Direction:   elevio.ToStringMotorDirection(e.Dir),
+		CabRequests: cabReq,
 	}
 }
 
