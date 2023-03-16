@@ -8,6 +8,7 @@ import (
 	"Project/elevio"
 	"fmt"
 )
+//NILS VAR HER!
 
 type elevatorState int
 

@@ -2,6 +2,8 @@ package config
 
 import "Project/elevio"
 
+
+
 // Change to var when everythig is working
 const NumFloors = 4
 const NumButtons = 3

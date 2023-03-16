@@ -10,6 +10,8 @@ import (
 	"flag"
 )
 
+//NILS VAR HER!
+
 func main() {
 	// parameter setting
 	var udpPeer = 6000
