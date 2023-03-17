@@ -7,6 +7,70 @@ import (
 	"fmt"
 )
 
+
+
+type ElevNetworkMessage struct {
+	id string
+	floot int
+	thisElevatorState elevator.ElevatorState
+	thisElevatorDir elevio.MotorDirection
+	thisElevatorCabRequests []bool
+	ElevatorHallRequests [][]config.OrderState
+}
+
+type LocalElevator struct {
+	id string
+	floot int
+	thisElevatorState elevator.ElevatorState
+	thisElevatorDir elevio.MotorDirection
+	thisElevatorCabRequests []bool
+}
+
+func LocalElevatorInit(pid string) {
+	cabRequests := make([]bool,4)
+	return LocalElevator(id: pid, floor: 0, thisElevatorState: Idle, thisElevatorDir: MD_Stop, cabRequests)
+}
+
+func updateeLocalElevatorData(localElevatorData []*LocalElevator, newElevator ElevNetworkMessage) {
+	for localElev := in range localElevatorData {
+		if localElev.id == newElevator.id {
+			localElev.floor = newElevator.floor
+			localElev.thisElevatorState = newElevator.thisElevatorState
+			localElev.thisElevatorDir = newElevator.thisElevatorDir
+			localElev.thisElevatorCabRequests = newElevator.thisElevatorCabRequests
+			return
+		}
+	}
+	addElevatorToLocalElevatorData(localElevatorData, newElevator)
+}
+
+
+func addElevatorToLocalElevatorData(localElevatorData []*LocalElevator, newElevator ElevNetworkMessage) {
+	tempElev = := new(LocalElevator)
+	(*tempElev).floor = newElevator.floor
+	(*tempElev).thisElevatorState = newElevator.thisElevatorState
+	(*tempElev).thisElevatorDir = newElevator.thisElevatorDir
+	(*tempElev).thisElevatorCabRequests = newElevator.thisElevatorCabRequests
+	
+}
+
+
+func CommunicateWithNet(
+	chMsgFromNetwork <-chan ElevNetworkMessage, 
+	chMsgToNetwork chan<- ElevNetworkMessage,
+										
+
+	localElevatorData = make([]*LocalElevator,0)
+
+	switch{
+	case elevMessage := <-chMsgFromNetwork:
+		
+	// IF 
+	}
+
+)
+
+
 func Run(
 	pid string,
 	chIoButtons <-chan elevio.ButtonEvent,
@@ -67,3 +131,5 @@ func Run(
 		}
 	}
 }
+
+

@@ -15,6 +15,20 @@ func InitEnvironment() {
 
 }
 
+
+type OrderState int
+
+const (
+	NoOrder            OrderState = 0
+	UnassignedOrder    OrderState = 1
+	AssignedOrder  	   OrderState = 2
+	CompletedOrder     OrderState = 3
+)
+
+
+
+
+
 type SendElev struct {
 	Behaviour   string `json:"behaviour"`
 	Floor       int    `json:"floor"`

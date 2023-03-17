@@ -20,9 +20,9 @@ func main() {
 	var id string
 	var port string
 
-	//flag.StringVar(&port, "port", "", "Port of this elevator")
-	//flag.StringVar(&id, "id", "", "id of this elevator")
-	//flag.Parse()
+	flag.StringVar(&port, "port", "", "Port of this elevator")
+	flag.StringVar(&id, "id", "", "id of this elevator")
+	flag.Parse()
 
 	// ****** Set up channels ******
 

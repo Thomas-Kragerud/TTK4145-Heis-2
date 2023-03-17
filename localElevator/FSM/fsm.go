@@ -20,7 +20,7 @@ func FSM(
 	chStop <-chan bool) {
 
 	// Init elevator
-	elevio.Init("localhost:15657",4)
+	elevio.Init("localhost:"+port,4)
 	eObj := new(elevator.Elevator)
 	eObj.Init(pid)
 	//chMsgToNetwork <- *eObj
