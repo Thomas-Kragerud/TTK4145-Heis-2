@@ -49,6 +49,18 @@ func (e *SendElev) Init() {
 	e.Direction = "stop"
 }
 
+type HRAElevState struct {
+	Behavior    string `json:"behaviour"`
+	Floor       int    `json:"floor"`
+	Direction   string `json:"direction"`
+	CabRequests []bool `json:"cabRequests"`
+}
+
+type HRAInput struct {
+	HallRequests [][2]bool               `json:"hallRequests"`
+	States       map[string]HRAElevState `json:"states"`
+}
+
 /* Emil
 const NumFloors = 4
 const NumButtons = 3

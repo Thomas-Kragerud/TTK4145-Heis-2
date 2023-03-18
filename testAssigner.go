@@ -47,33 +47,7 @@ func main() {
 		return
 	}
 
-	//ret, err := exec.Command("docker", "run", "--rm", "dock_hra", "-i", string(jsonBytes)).CombinedOutput()
-	//if err != nil {
-	//	fmt.Println("exec.Command error: ", err, "\nOutput:", string(ret))
-	//
-	//	//fmt.Println(string(ret))
-	//	return
-	//}
-	//cmd := exec.Command("docker", "run", "--rm", "-i", "dock_hra", "--input", string(jsonBytes))
 	ret, err := exec.Command("docker", "run", "--rm", "-i", "dock_hra", "/app/hall_request_assigner", "--input", string(jsonBytes)).CombinedOutput()
-
-	//var output bytes.Buffer
-	//cmd.Stdout = &output
-	//cmd.Stderr = &output
-	//
-	//err = cmd.Run()
-	//if err != nil {
-	//	fmt.Println("exec.Command error: ", err, "\nOutput:", output.String())
-	//	return
-	//}
-
-	//outputs := new(map[string][][2]bool)
-	//err = json.Unmarshal(output.Bytes(), &output)
-	//if err != nil {
-	//	fmt.Println("json.Unmarshal error: ", err)
-	//	return
-	//}
-	//fmt.Printf("%v", cmd)
 
 	output := new(map[string][][2]bool)
 	err = json.Unmarshal(ret, &output)
