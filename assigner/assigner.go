@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"runtime"
 )
 
 // Assign -
@@ -14,15 +15,30 @@ func Assign(inData config.HRAInput) map[string][][2]bool {
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)
 	}
-	ret, err := exec.Command(
-		"docker",
-		"run",
-		"--rm",
-		"-i",
-		"dock_hra",
-		"/app/hall_request_assigner",
-		"--input",
-		string(jsonBytes)).CombinedOutput()
+
+	var ret []uint8
+
+	if runtime.GOOS == "darwin" {
+		ret, err = exec.Command(
+			"docker",
+			"run",
+			"--rm",
+			"-i",
+			"dock_hra",
+			"/app/hall_request_assigner",
+			"--input",
+			string(jsonBytes)).CombinedOutput()
+	} else if runtime.GOOS == "windows" {
+		ret, err = exec.Command(
+			"costfunc/hall_request_assigner.exe",
+			"-i",
+			string(jsonBytes)).CombinedOutput()
+	} else if runtime.GOOS == "linux" {
+		ret, err = exec.Command(
+			"costfunc/hall_request_assigner",
+			"-i",
+			string(jsonBytes)).CombinedOutput()
+	}
 
 	output := new(map[string][][2]bool)
 	err = json.Unmarshal(ret, &output)
@@ -31,7 +47,5 @@ func Assign(inData config.HRAInput) map[string][][2]bool {
 	}
 
 	return *output
-
-	// Convert the input data to JSON
 
 }

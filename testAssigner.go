@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os/exec"
+	"Project/assigner"
+	"Project/config"
 )
 import "fmt"
-import "encoding/json"
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
@@ -23,16 +23,16 @@ type HRAInput struct {
 
 func main() {
 
-	input := HRAInput{
+	input := config.HRAInput{
 		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
-		States: map[string]HRAElevState{
-			"one": HRAElevState{
+		States: map[string]config.HRAElevState{
+			"one": config.HRAElevState{
 				Behavior:    "moving",
 				Floor:       2,
 				Direction:   "up",
 				CabRequests: []bool{false, false, false, true},
 			},
-			"two": HRAElevState{
+			"two": config.HRAElevState{
 				Behavior:    "idle",
 				Floor:       0,
 				Direction:   "stop",
@@ -41,23 +41,26 @@ func main() {
 		},
 	}
 
-	jsonBytes, err := json.Marshal(input)
-	if err != nil {
-		fmt.Println("json.Marshal error: ", err)
-		return
-	}
+	//jsonBytes, err := json.Marshal(input)
+	//if err != nil {
+	//	fmt.Println("json.Marshal error: ", err)
+	//	return
+	//}
+	//
+	//ret, err := exec.Command("docker", "run", "--rm", "-i", "dock_hra", "/app/hall_request_assigner", "--input", string(jsonBytes)).CombinedOutput()
 
-	ret, err := exec.Command("docker", "run", "--rm", "-i", "dock_hra", "/app/hall_request_assigner", "--input", string(jsonBytes)).CombinedOutput()
-
-	output := new(map[string][][2]bool)
-	err = json.Unmarshal(ret, &output)
-	if err != nil {
-		fmt.Println("json.Unmarshal error: ", err)
-		return
-	}
+	output := assigner.Assign(input)
+	//output := new(map[string][][2]bool)
+	//err = json.Unmarshal(ret, &output)
+	//if err != nil {
+	//	fmt.Println("json.Unmarshal error: ", err)
+	//	return
+	//}
+	//t := reflect.TypeOf(err)
+	//fmt.Println("Type of myVar:", t)
 
 	fmt.Printf("output: \n")
-	for k, v := range *output {
+	for k, v := range output {
 		fmt.Printf("%6v :  %+v\n", k, v)
 	}
 
