@@ -15,7 +15,8 @@ func FSM2(
 	chVirtualFloor <-chan int,
 	chVirtualObstical <-chan bool,
 	chVirtualStop <-chan bool,
-	chToDist chan<- elevator.Elevator) {
+	chToDist chan<- elevator.Elevator,
+	chRemoveOrders <-chan elevio.ButtonEvent) {
 
 	eObj := &initElevator
 
@@ -59,6 +60,8 @@ func FSM2(
 				}
 				break
 			}
+		case remove := <-chRemoveOrders:
+			eObj.Orders[remove.Floor][remove.Button] = false
 
 		case floor := <-chVirtualFloor:
 			eObj.SetFloor(floor)

@@ -53,7 +53,8 @@ func Run(
 				elevatorMap[thisElev.Id] = r
 				localhall = addTrue(localhall, r.Elevator.ToHallReq())
 			}
-			go reRunCost(elevatorMap, chReAssign, chMsgToNetwork, thisElev)
+			chMsgToNetwork <- elevatorMap[thisElev.Id].Elevator
+			go reRunCost(elevatorMap, chReAssign)
 
 		case updateThis := <-chFromFSM:
 			r := elevatorMap[thisElev.Id]
@@ -62,7 +63,7 @@ func Run(
 			elevatorMap[thisElev.Id] = r
 			localhall = addFalse(localhall, r.Elevator.ToHallReq())
 			chMsgToNetwork <- r.Elevator
-			go reRunCost(elevatorMap, chReAssign, chMsgToNetwork, thisElev)
+			go reRunCost(elevatorMap, chReAssign)
 
 		case p := <-chPeerUpdate:
 			fmt.Printf("Peer uptade: \n")
@@ -84,35 +85,33 @@ func Run(
 				elevatorMap[e.Elevator.Id] = e
 				//chRecovElevToNet <- e.Elevator // Possible lock
 			}
-			go reRunCost(elevatorMap, chReAssign, chMsgToNetwork, thisElev)
+			go reRunCost(elevatorMap, chReAssign)
 
 		case elevObj := <-chMsgFromNetwork:
-			if elevObj.Id != thisElev.Id {
+			if elevObj.Id == thisElev.Id {
 				continue
 				// If have not seen this elevator before
 			} else if _, ok := elevatorMap[elevObj.Id]; !ok {
 				fmt.Printf("New elevator %s\n", elevObj.Id)
 				newElevator := reciveElevator{elevObj, true, 0}
 				elevatorMap[elevObj.Id] = newElevator
-				go reRunCost(elevatorMap, chReAssign, chMsgToNetwork, thisElev)
-
+				go reRunCost(elevatorMap, chReAssign)
 			} else {
 				oldElevator := elevatorMap[elevObj.Id]
 				oldElevator.Elevator = elevObj
 				oldElevator.version++
 				elevatorMap[elevObj.Id] = oldElevator
 				localhall = addTrue(localhall, oldElevator.Elevator.ToHallReq())
-				go reRunCost(elevatorMap, chReAssign, chMsgToNetwork, thisElev)
+				go reRunCost(elevatorMap, chReAssign)
 			}
+		default:
+			continue
 		}
 	}
 }
 
 func reRunCost(elevatorMap map[string]reciveElevator,
-	chReAssign chan<- map[string][][3]bool,
-	chMsgToNetwork chan<- elevator.Elevator,
-	thisElev elevator.Elevator) {
-	chMsgToNetwork <- elevatorMap[thisElev.Id].Elevator
+	chReAssign chan<- map[string][][3]bool) {
 	input := config.HRAInput{
 		States:       make(map[string]config.HRAElevState),
 		HallRequests: make([][2]bool, config.NumFloors),

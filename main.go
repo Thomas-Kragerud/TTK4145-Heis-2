@@ -44,6 +44,7 @@ func main() {
 
 	// Channels for virtual elevator
 	chVirtualButtons := make(chan elevio.ButtonEvent)
+	chRemoveOrders := make(chan elevio.ButtonEvent)
 	chVirtualFloor := make(chan int)
 
 	chReAssign := make(chan map[string][][3]bool)
@@ -71,7 +72,8 @@ func main() {
 		id,
 		chReAssign,
 		chMsgToNetwork,
-		chVirtualButtons)
+		chVirtualButtons,
+		chRemoveOrders)
 
 	eObj := boot.Elevator(id, port, chIoFloor)
 
@@ -94,7 +96,8 @@ func main() {
 		chIoFloor,
 		chIoObstical,
 		chIoStop,
-		chMsgFromFsm)
+		chMsgFromFsm,
+		chRemoveOrders)
 
 	// watchdog
 	// not implement

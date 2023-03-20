@@ -3,14 +3,14 @@ package distributor
 import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
-	"time"
 )
 
 func Distribute2(
 	pid string,
 	chReAssign <-chan map[string][][3]bool,
 	chMsgToNetwork chan<- elevator.Elevator,
-	chVirtualButtons chan<- elevio.ButtonEvent) {
+	chVirtualButtons chan<- elevio.ButtonEvent,
+	chRemoveOrders chan<- elevio.ButtonEvent) {
 
 	for {
 		select {
@@ -25,7 +25,10 @@ func Distribute2(
 									chVirtualButtons <- elevio.ButtonEvent{
 										Floor:  f,
 										Button: elevio.ButtonType(b)}
-									time.Sleep(10 * time.Millisecond)
+								} else {
+									chRemoveOrders <- elevio.ButtonEvent{
+										Floor:  f,
+										Button: elevio.ButtonType(b)}
 								}
 							}
 						}
