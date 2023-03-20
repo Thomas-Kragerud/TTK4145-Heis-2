@@ -9,15 +9,15 @@ import (
 	"fmt"
 )
 
-type elevatorState int
+type Elevatorstate int
 
 const (
-	Idle     elevatorState = 0
-	DoorOpen elevatorState = 1
-	Moving   elevatorState = 2
+	Idle     Elevatorstate = 0
+	DoorOpen Elevatorstate = 1
+	Moving   Elevatorstate = 2
 )
 
-var _stateToString = map[elevatorState]string{
+var _stateToString = map[Elevatorstate]string{
 	Idle:     "idle",
 	DoorOpen: "doorOpen",
 	Moving:   "moving",
@@ -38,7 +38,7 @@ type Elevator struct {
 	Floor  int
 	Dir    elevio.MotorDirection
 	Orders [][]bool
-	State  elevatorState
+	State  Elevatorstate
 	Id     string
 	Obs    bool // Obstruction
 }
@@ -85,20 +85,6 @@ func (e *Elevator) UpdateLights() {
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, floor, e.Orders[floor][b])
 		}
-	}
-}
-
-// ToSendElev converts elevator object to a sendElev object
-func (e *Elevator) ToSendElev() config.SendElev {
-	var cabReq []bool
-	for _, floor := range e.Orders {
-		cabReq = append(cabReq, floor[elevio.BT_Cab])
-	}
-	return config.SendElev{
-		Behaviour:   _stateToString[e.State],
-		Floor:       e.Floor,
-		Direction:   elevio.ToStringMotorDirection(e.Dir),
-		CabRequests: cabReq,
 	}
 }
 
@@ -166,4 +152,26 @@ func (e *Elevator) SetStateIdle() {
 
 func (e *Elevator) SetStateMoving() {
 	e.State = Moving
+}
+
+func (e *Elevator) ToHRA() config.HRAElevState {
+	var cabReq []bool
+	for _, btn := range e.Orders {
+		cabReq = append(cabReq, btn[2])
+	}
+	return config.HRAElevState{
+		Behavior:    _stateToString[e.State],
+		Floor:       e.Floor,
+		Direction:   elevio.ToStringMotorDirection(e.Dir),
+		CabRequests: cabReq,
+	}
+}
+
+func (e *Elevator) ToHallReq() [][2]bool {
+	var hallReq [][2]bool
+	for _, floor := range e.Orders {
+		hallReq = append(hallReq, [2]bool{floor[0], floor[1]})
+	}
+	fmt.Printf("HallReq: %v\n", hallReq)
+	return hallReq
 }

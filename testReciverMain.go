@@ -2,7 +2,6 @@ package main
 
 import (
 	"Project/elevio"
-	"Project/reciver"
 	"flag"
 )
 
@@ -29,12 +28,6 @@ func main() {
 	go elevio.PollStopButton(chStop)
 
 	elevio.Init("localhost:"+port, 4)
-
-	go reciver.Run(id,
-		chButtons,
-		chAtFloor,
-		chObst,
-		chStop)
 
 	select {}
 

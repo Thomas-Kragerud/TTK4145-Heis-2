@@ -9,7 +9,7 @@ import (
 )
 
 // Assign -
-func Assign(inData config.HRAInput) map[string][][2]bool {
+func Assign(inData config.HRAInput) map[string][][3]bool {
 	// Mekk test asigner inn her og få den til å funke med
 	jsonBytes, err := json.Marshal(inData)
 	if err != nil {
@@ -26,6 +26,7 @@ func Assign(inData config.HRAInput) map[string][][2]bool {
 			"-i",
 			"dock_hra",
 			"/app/hall_request_assigner",
+			"--includeCab",
 			"--input",
 			string(jsonBytes)).CombinedOutput()
 	} else if runtime.GOOS == "windows" {
@@ -40,7 +41,7 @@ func Assign(inData config.HRAInput) map[string][][2]bool {
 			string(jsonBytes)).CombinedOutput()
 	}
 
-	output := new(map[string][][2]bool)
+	output := new(map[string][][3]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
