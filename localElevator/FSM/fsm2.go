@@ -198,12 +198,12 @@ func FSM2(
 					doorTimer.Reset(3 * time.Second)
 					break
 				}
-				eObj.ClearAtCurrentFloor()
 				if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
 					clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
 				} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
 					clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
 				}
+				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
 				eObj.Dir = simple_next_direction(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 				elevio.SetDoorOpenLamp(false)
