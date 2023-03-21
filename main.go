@@ -54,9 +54,9 @@ func main() {
 	// ****** Go routines ******
 	chAddBtnNet := make(chan elevio.ButtonEvent)
 	chReciveBtnNet := make(chan elevio.ButtonEvent, 100)
-	chRmBtnNet := make(chan elevio.ButtonEvent)
+	chRmBtnNet := make(chan elevio.ButtonEvent, 100)
 	chRmReciveBtnNet := make(chan elevio.ButtonEvent, 100)
-	chClareHallFsm := make(chan elevio.ButtonEvent)
+	chClareHallFsm := make(chan elevio.ButtonEvent, 100)
 
 	// Goroutine for local elevator
 	go elevio.PollButtons(chIoButtons)
