@@ -51,6 +51,7 @@ func Run(
 				r.Elevator.AddOrder(ioBtn)
 				//r.version++
 				elevatorMap[thisElev.Id] = r
+				go reRunCost(elevatorMap, chReAssign, hall)
 				chMsgToNetwork <- r.Elevator
 			} else {
 				r := elevatorMap[thisElev.Id]
@@ -65,6 +66,7 @@ func Run(
 
 		case ioBtnNet := <-chReciveBtnNet:
 			hall = addBTN(hall, ioBtnNet)
+			updateHallLights(hall)
 			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case c := <-chClareHallFsm:
@@ -72,6 +74,7 @@ func Run(
 
 		case rmBtnNet := <-chRmReciveBtnNet:
 			hall = rmBTN(hall, rmBtnNet)
+			updateHallLights(hall)
 			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case updateThis := <-chFromFSM:
@@ -110,7 +113,6 @@ func Run(
 				r.Elevator = elevObj
 				r.version++
 				elevatorMap[thisElev.Id] = r
-				go reRunCost(elevatorMap, chReAssign, hall)
 				// If have not seen this elevator before
 			} else if _, ok := elevatorMap[elevObj.Id]; !ok {
 				fmt.Printf("New elevator %s\n", elevObj.Id)
@@ -126,6 +128,7 @@ func Run(
 				//localhall = addTrue(localhall, oldElevator.Elevator.ToHallReq())
 				go reRunCost(elevatorMap, chReAssign, hall)
 			}
+			break
 		default:
 			continue
 		}
@@ -192,4 +195,19 @@ func rmBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
 		hall[btn.Floor][1] = false
 	}
 	return hall
+}
+
+func updateHallLights(hall [][2]bool) {
+	for i := range hall {
+		if hall[i][0] {
+			elevio.SetButtonLamp(elevio.BT_HallUp, i, true)
+		} else {
+			elevio.SetButtonLamp(elevio.BT_HallUp, i, false)
+		}
+		if hall[i][1] {
+			elevio.SetButtonLamp(elevio.BT_HallDown, i, true)
+		} else {
+			elevio.SetButtonLamp(elevio.BT_HallDown, i, false)
+		}
+	}
 }

@@ -35,12 +35,7 @@ func FSM2(
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(3 * time.Second)
 
-					if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
-						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
-					} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
-						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
-					}
-					chToDist <- *eObj
+					//chToDist <- *eObj
 
 				} else {
 					eObj.AddOrder(btnEvent)                // Add order to orders
@@ -48,7 +43,7 @@ func FSM2(
 					elevio.SetMotorDirection(eObj.Dir)     // Set direction
 					eObj.SetStateMoving()
 
-					chToDist <- *eObj // Send elevator states through channel
+					//chToDist <- *eObj // Send elevator states through channel
 				}
 				break
 
@@ -95,6 +90,7 @@ func FSM2(
 				//elevio.SetMotorDirection(elevio.MD_Stop)
 				eObj.Dir = simple_next_direction(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
+				eObj.SetStateMoving()
 				if eObj.Dir == elevio.MD_Stop {
 					eObj.SetStateIdle()
 				}
@@ -102,17 +98,15 @@ func FSM2(
 				break
 
 			case elevator.DoorOpen:
-				eObj.Orders[remove.Floor][remove.Button] = false
-				eObj.Dir = simple_next_direction(eObj)
-				elevio.SetMotorDirection(eObj.Dir)
-				if eObj.Dir == elevio.MD_Stop {
-					eObj.SetStateIdle()
+				if eObj.Floor == remove.Floor {
+					continue
+				} else {
+					eObj.Orders[remove.Floor][remove.Button] = false
+					eObj.UpdateLights()
 				}
-				eObj.UpdateLights()
 				break
 
 			}
-			eObj.Orders[remove.Floor][remove.Button] = false
 
 		case floor := <-chVirtualFloor:
 			eObj.SetFloor(floor)
@@ -135,7 +129,22 @@ func FSM2(
 					eObj.SetStateDoorOpen()          // Set state to DoorOpen
 					eObj.UpdateLights()              // Update alle elevator lights
 					chToDist <- *eObj                // Broadcast states
+				} else if floor == 0 || floor == config.NumFloors-1 {
+					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
+					eObj.SetDirectionStop()                  // Set direction to stop
+					eObj.Dir = simple_next_direction(eObj)
+					elevio.SetMotorDirection(eObj.Dir)
+
+					if eObj.Dir == elevio.MD_Stop {
+						eObj.SetStateIdle()
+						chToDist <- *eObj
+					} else {
+						eObj.SetStateMoving()
+					}
+
+					eObj.SetStateIdle()
 				}
+				break
 
 			default:
 				break

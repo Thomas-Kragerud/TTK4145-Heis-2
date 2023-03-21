@@ -82,9 +82,7 @@ func (e *Elevator) String() string {
 func (e *Elevator) UpdateLights() {
 	elevio.SetFloorIndicator(e.Floor)
 	for floor := range e.Orders {
-		for b := elevio.ButtonType(0); b < 3; b++ {
-			elevio.SetButtonLamp(b, floor, e.Orders[floor][b])
-		}
+		elevio.SetButtonLamp(elevio.ButtonType(elevio.BT_Cab), floor, e.Orders[floor][elevio.BT_Cab])
 	}
 }
 

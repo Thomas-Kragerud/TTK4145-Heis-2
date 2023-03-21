@@ -41,21 +41,21 @@ func main() {
 	chIoFloor := make(chan int)
 	chIoObstical := make(chan bool)
 	chIoStop := make(chan bool)
-	chIoButtons := make(chan elevio.ButtonEvent)
+	chIoButtons := make(chan elevio.ButtonEvent, 100)
 
 	// Channels for virtual elevator
-	chVirtualButtons := make(chan elevio.ButtonEvent)
-	chRemoveOrders := make(chan elevio.ButtonEvent)
+	chVirtualButtons := make(chan elevio.ButtonEvent, 100)
+	chRemoveOrders := make(chan elevio.ButtonEvent, 100)
 	chVirtualFloor := make(chan int)
 
-	chReAssign := make(chan map[string][][3]bool)
-	chMsgFromFsm := make(chan elevator.Elevator)
+	chReAssign := make(chan map[string][][3]bool, 100)
+	chMsgFromFsm := make(chan elevator.Elevator, 100)
 	//chMsgToFsm := make(chan elevator.Elevator)
 	// ****** Go routines ******
 	chAddBtnNet := make(chan elevio.ButtonEvent)
-	chReciveBtnNet := make(chan elevio.ButtonEvent)
+	chReciveBtnNet := make(chan elevio.ButtonEvent, 100)
 	chRmBtnNet := make(chan elevio.ButtonEvent)
-	chRmReciveBtnNet := make(chan elevio.ButtonEvent)
+	chRmReciveBtnNet := make(chan elevio.ButtonEvent, 100)
 	chClareHallFsm := make(chan elevio.ButtonEvent)
 
 	// Goroutine for local elevator
@@ -106,7 +106,7 @@ func main() {
 		chRmBtnNet,
 		chClareHallFsm,
 		chReciveBtnNet,
-		chRmReciveBtnNet, )
+		chRmReciveBtnNet)
 
 	go FSM.FSM2(
 		eObj,

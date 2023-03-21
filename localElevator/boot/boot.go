@@ -31,6 +31,7 @@ func Elevator(
 		eObj.SetFloor(floor + 1)
 	}
 	elevio.SetMotorDirection(elevio.MD_Stop)
+	eObj.SetStateIdle()
 
 	return *eObj
 }
