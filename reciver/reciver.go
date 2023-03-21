@@ -4,14 +4,20 @@ import (
 	"Project/assigner"
 	"Project/config"
 	"Project/elevio"
+	"Project/localElevator/elevator"
 	"fmt"
 )
 
+var _stateToString = map[elevator.ElevatorState]string{
+	elevator.Idle:     "idle",
+	elevator.DoorOpen: "doorOpen",
+	elevator.Moving:   "moving",
+}
 
 
 type ElevNetworkMessage struct {
 	id string
-	floot int
+	floor int
 	thisElevatorState elevator.ElevatorState
 	thisElevatorDir elevio.MotorDirection
 	thisElevatorCabRequests []bool
@@ -20,19 +26,41 @@ type ElevNetworkMessage struct {
 
 type LocalElevator struct {
 	id string
-	floot int
+	floor int
 	thisElevatorState elevator.ElevatorState
 	thisElevatorDir elevio.MotorDirection
 	thisElevatorCabRequests []bool
 }
 
-func LocalElevatorInit(pid string) {
+func printLocalElevatorData(LocalElevatorData []*LocalElevator) {
+	for _, elev := range LocalElevatorData {
+		str := "***Elevator***\n"
+		str += fmt.Sprintf("Floor: %d\n", elev.floor)
+		str += fmt.Sprintf("Direction: %s\n", elevio.ToStringMotorDirection(elev.thisElevatorDir))
+		str += fmt.Sprintf("State: %s\n", _stateToString[elev.thisElevatorState])
+		str += "Orders:\n"
+		str += " cab\n"
+		for floor := range elev.thisElevatorCabRequests {
+			str += fmt.Sprintf("| %d", floor)
+			str += fmt.Sprintf(" %v ", elev.thisElevatorCabRequests[floor])
+			str += "|\n"
+		}
+		fmt.Printf(str)
+	}
+}
+
+func LocalElevatorInit(pid string) LocalElevator{
 	cabRequests := make([]bool,4)
-	return LocalElevator(id: pid, floor: 0, thisElevatorState: Idle, thisElevatorDir: MD_Stop, cabRequests)
+
+	for floor := 0; floor < config.NumFloors; floor++{
+		cabRequests[floor] = true
+	}
+	return LocalElevator{id: "thomas", floor: 1, thisElevatorState: elevator.Idle, thisElevatorDir: elevio.MD_Down, thisElevatorCabRequests: cabRequests}
+	//return LocalElevator(id: pid, floor: 0, thisElevatorState: Idle, thisElevatorDir: MD_Stop, thisElevatorCabRequests: cabRequests)
 }
 
 func updateeLocalElevatorData(localElevatorData []*LocalElevator, newElevator ElevNetworkMessage) {
-	for localElev := in range localElevatorData {
+	for _,localElev := range localElevatorData {
 		if localElev.id == newElevator.id {
 			localElev.floor = newElevator.floor
 			localElev.thisElevatorState = newElevator.thisElevatorState
@@ -41,34 +69,99 @@ func updateeLocalElevatorData(localElevatorData []*LocalElevator, newElevator El
 			return
 		}
 	}
-	addElevatorToLocalElevatorData(localElevatorData, newElevator)
+	addElevatorToLocalElevatorData(&localElevatorData, newElevator)
 }
 
 
-func addElevatorToLocalElevatorData(localElevatorData []*LocalElevator, newElevator ElevNetworkMessage) {
-	tempElev = := new(LocalElevator)
+func addElevatorToLocalElevatorData(localElevatorData *[]*LocalElevator, newElevator ElevNetworkMessage) {
+	tempElev := new(LocalElevator)
 	(*tempElev).floor = newElevator.floor
 	(*tempElev).thisElevatorState = newElevator.thisElevatorState
 	(*tempElev).thisElevatorDir = newElevator.thisElevatorDir
 	(*tempElev).thisElevatorCabRequests = newElevator.thisElevatorCabRequests
+	(*tempElev).id = newElevator.id
+	*localElevatorData = append(*localElevatorData,tempElev)	
+}
+
+func broadcastLocalElevator(localElevatorData LocalElevator,localHallRequests [][]config.OrderState ,ch_ToNetwork chan<- ElevNetworkMessage) {
+	tempElevatorMessage := new(ElevNetworkMessage)
+	(*tempElevatorMessage).id = localElevatorData.id
+	(*tempElevatorMessage).floor = localElevatorData.floor
+	(*tempElevatorMessage).thisElevatorState = localElevatorData.thisElevatorState
+	(*tempElevatorMessage).thisElevatorDir = localElevatorData.thisElevatorDir
+	(*tempElevatorMessage).thisElevatorCabRequests = localElevatorData.thisElevatorCabRequests
+	(*tempElevatorMessage).ElevatorHallRequests = localHallRequests
+	ch_ToNetwork <- (*tempElevatorMessage)
+}
+
+func CommunicateWithNet(
+	id string,
+	chMsgFromNetwork <-chan ElevNetworkMessage, 
+	chMsgToNetwork chan<- ElevNetworkMessage,
+	chNewLocalOrder <-chan elevio.ButtonEvent,
+	chNewLocalState <-chan elevator.Elevator,
+	chToLocalElevator chan<- elevio.ButtonEvent,
+	chFromLocalElevator <-chan elevator.Elevator) {
+
 	
+	localElevatorData := make([]*LocalElevator,0)
+	thisElevator := new(LocalElevator)
+	*thisElevator = LocalElevatorInit(id);
+	localElevatorData = append(localElevatorData,thisElevator)
+	//thisHallRequests := new([][]config.OrderState)
+	//activeHallRequests := new([][]bool)
+
+
+
+	for {
+		switch {
+			case newOrder := <- chNewLocalOrder:
+				chToLocalElevator <- newOrder
+			case upDateFromLocalElevator := <- chFromLocalElevator:
+				for elev := range localElevatorData{
+					if elev.id == upDateFromLocalElevator.id{
+						elev.thisElevatorState = upDateFromLocalElevator.State
+						elev.floor = upDateFromLocalElevator.Floor
+						for floor := range config.numFloors{
+							elev.thisElevatorCabRequests[floor][BT_Cab] = updateeLocalElevator.Orders[floor][BT_Cab]
+						}
+					}
+				}
+			case elevMessage := <- chMsgFromNetwork:
+		
+		}
+	}
 }
 
 
-func CommunicateWithNet(
-	chMsgFromNetwork <-chan ElevNetworkMessage, 
-	chMsgToNetwork chan<- ElevNetworkMessage,
-										
 
-	localElevatorData = make([]*LocalElevator,0)
 
-	switch{
-	case elevMessage := <-chMsgFromNetwork:
-		
-	// IF 
+func TestingStuff(){
+	elevator1 := new(LocalElevator)
+	cabRequests := make([]bool,config.NumFloors)
+	for floor := 0; floor < config.NumFloors; floor++{
+		cabRequests[floor] = false
 	}
+	
+	hallRequests := make([][]config.OrderState,4)
+	for floor := 0; floor < config.NumFloors; floor++{
+		hallRequests[floor] = make([]config.OrderState, 3)
+	}
+	*elevator1 = LocalElevator{id: "nils", floor: 2, thisElevatorState: elevator.Idle, thisElevatorDir: elevio.MD_Down, thisElevatorCabRequests: cabRequests}
+	elevator2 := new(LocalElevator)
+	*elevator2 = LocalElevatorInit("Thomas")
+	localElevatorData2 := make([]*LocalElevator,0)
+	localElevatorData2 = append(localElevatorData2,elevator1)
+	//localElevatorData2 = addElevatorToLocalElevatorData(&localElevatorData2,elevator1)
+	localElevatorData2 = append(localElevatorData2,elevator2)
+	cabRequests[3] = true
+	networkMessage := new(ElevNetworkMessage)
+	*networkMessage = ElevNetworkMessage{id: "nils", floor: 4, thisElevatorState: elevator.Idle, thisElevatorDir: elevio.MD_Stop, thisElevatorCabRequests: cabRequests, ElevatorHallRequests: hallRequests}
+	updateeLocalElevatorData(localElevatorData2,*networkMessage)
+	printLocalElevatorData(localElevatorData2)
+}
 
-)
+
 
 
 func Run(
@@ -131,5 +224,3 @@ func Run(
 		}
 	}
 }
-
-

@@ -7,7 +7,8 @@ import (
 	"Project/localElevator/elevator"
 	"Project/network/bcast"
 	"Project/network/peers"
-	//"flag"
+	"flag"
+	"Project/reciver"
 )
 
 //NILS VAR HER!
@@ -23,7 +24,8 @@ func main() {
 	flag.StringVar(&port, "port", "", "Port of this elevator")
 	flag.StringVar(&id, "id", "", "id of this elevator")
 	flag.Parse()
-
+	
+	reciver.TestingStuff()
 	// ****** Set up channels ******
 
 	// Channels for distribution
