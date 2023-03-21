@@ -26,13 +26,18 @@ func Run(
 	chVirtualFloor chan<- int,
 	chFromFSM <-chan elevator.Elevator,
 	chMsgToNetwork chan<- elevator.Elevator,
-	chPeerUpdate <-chan peers.PeerUpdate) {
+	chPeerUpdate <-chan peers.PeerUpdate,
+	chAddBtnNet chan elevio.ButtonEvent,
+	chRmBtnNet chan elevio.ButtonEvent,
+	chClareHallFsm chan elevio.ButtonEvent,
+	chReciveBtnNet chan elevio.ButtonEvent,
+	chRmReciveBtnNet chan elevio.ButtonEvent) {
 
 	// Init variables
 	thisElev := elevator
 	elevatorMap := make(map[string]reciveElevator)
 	elevatorMap[thisElev.Id] = reciveElevator{thisElev, true, 0}
-	localhall := make([][2]bool, config.NumFloors)
+	hall := make([][2]bool, config.NumFloors)
 
 	// Init this elevator i mai
 
@@ -46,24 +51,36 @@ func Run(
 				r.Elevator.AddOrder(ioBtn)
 				//r.version++
 				elevatorMap[thisElev.Id] = r
+				chMsgToNetwork <- r.Elevator
 			} else {
 				r := elevatorMap[thisElev.Id]
 				r.Elevator.AddOrder(ioBtn)
 				r.version++
 				elevatorMap[thisElev.Id] = r
-				localhall = addTrue(localhall, r.Elevator.ToHallReq())
+				chAddBtnNet <- ioBtn
+				//localhall = addTrue(localhall, r.Elevator.ToHallReq())
 			}
-			chMsgToNetwork <- elevatorMap[thisElev.Id].Elevator
-			go reRunCost(elevatorMap, chReAssign)
+
+			//chMsgToNetwork <- elevatorMap[thisElev.Id].Elevator
+
+		case ioBtnNet := <-chReciveBtnNet:
+			hall = addBTN(hall, ioBtnNet)
+			go reRunCost(elevatorMap, chReAssign, hall)
+
+		case c := <-chClareHallFsm:
+			chRmBtnNet <- c
+
+		case rmBtnNet := <-chRmReciveBtnNet:
+			hall = rmBTN(hall, rmBtnNet)
+			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case updateThis := <-chFromFSM:
 			r := elevatorMap[thisElev.Id]
 			r.Elevator = updateThis
 			r.version++
 			elevatorMap[thisElev.Id] = r
-			localhall = addFalse(localhall, r.Elevator.ToHallReq())
 			chMsgToNetwork <- r.Elevator
-			go reRunCost(elevatorMap, chReAssign)
+			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case p := <-chPeerUpdate:
 			fmt.Printf("Peer uptade: \n")
@@ -85,24 +102,25 @@ func Run(
 				elevatorMap[e.Elevator.Id] = e
 				//chRecovElevToNet <- e.Elevator // Possible lock
 			}
-			go reRunCost(elevatorMap, chReAssign)
+			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case elevObj := <-chMsgFromNetwork:
 			if elevObj.Id == thisElev.Id {
-				continue
+				go reRunCost(elevatorMap, chReAssign, hall)
 				// If have not seen this elevator before
 			} else if _, ok := elevatorMap[elevObj.Id]; !ok {
 				fmt.Printf("New elevator %s\n", elevObj.Id)
 				newElevator := reciveElevator{elevObj, true, 0}
 				elevatorMap[elevObj.Id] = newElevator
-				go reRunCost(elevatorMap, chReAssign)
+				go reRunCost(elevatorMap, chReAssign, hall)
 			} else {
 				oldElevator := elevatorMap[elevObj.Id]
 				oldElevator.Elevator = elevObj
 				oldElevator.version++
 				elevatorMap[elevObj.Id] = oldElevator
-				localhall = addTrue(localhall, oldElevator.Elevator.ToHallReq())
-				go reRunCost(elevatorMap, chReAssign)
+
+				//localhall = addTrue(localhall, oldElevator.Elevator.ToHallReq())
+				go reRunCost(elevatorMap, chReAssign, hall)
 			}
 		default:
 			continue
@@ -111,7 +129,8 @@ func Run(
 }
 
 func reRunCost(elevatorMap map[string]reciveElevator,
-	chReAssign chan<- map[string][][3]bool) {
+	chReAssign chan<- map[string][][3]bool,
+	hall [][2]bool) {
 	input := config.HRAInput{
 		States:       make(map[string]config.HRAElevState),
 		HallRequests: make([][2]bool, config.NumFloors),
@@ -123,6 +142,7 @@ func reRunCost(elevatorMap map[string]reciveElevator,
 			input.States[id] = hraElev
 		}
 	}
+	input.HallRequests = hall
 	chReAssign <- assigner.Assign(input)
 }
 
@@ -150,4 +170,22 @@ func addFalse(addTO, addFrom [][2]bool) [][2]bool {
 		}
 	}
 	return addTO
+}
+
+func addBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
+	if btn.Button == elevio.BT_HallUp {
+		hall[btn.Floor][0] = true
+	} else if btn.Button == elevio.BT_HallDown {
+		hall[btn.Floor][1] = true
+	}
+	return hall
+}
+
+func rmBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
+	if btn.Button == elevio.BT_HallUp {
+		hall[btn.Floor][0] = false
+	} else if btn.Button == elevio.BT_HallDown {
+		hall[btn.Floor][1] = false
+	}
+	return hall
 }

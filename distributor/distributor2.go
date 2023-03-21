@@ -9,6 +9,7 @@ func Distribute2(
 	pid string,
 	chReAssign <-chan map[string][][3]bool,
 	chMsgToNetwork chan<- elevator.Elevator,
+	chMsgToFsm chan<- elevator.Elevator,
 	chVirtualButtons chan<- elevio.ButtonEvent,
 	chRemoveOrders chan<- elevio.ButtonEvent) {
 

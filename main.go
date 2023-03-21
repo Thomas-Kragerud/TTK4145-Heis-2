@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Project/distributor"
 	"Project/elevio"
 	"Project/localElevator/FSM"
 	"Project/localElevator/boot"
@@ -17,6 +16,8 @@ func main() {
 	var udpPeer = 6000
 	var updData = 6200
 	var udpRecover = 6400
+	var udpAddBtn = 6450
+	var udpRmBtn = 6500
 	var id string
 	var port string
 
@@ -49,7 +50,13 @@ func main() {
 
 	chReAssign := make(chan map[string][][3]bool)
 	chMsgFromFsm := make(chan elevator.Elevator)
+	//chMsgToFsm := make(chan elevator.Elevator)
 	// ****** Go routines ******
+	chAddBtnNet := make(chan elevio.ButtonEvent)
+	chReciveBtnNet := make(chan elevio.ButtonEvent)
+	chRmBtnNet := make(chan elevio.ButtonEvent)
+	chRmReciveBtnNet := make(chan elevio.ButtonEvent)
+	chClareHallFsm := make(chan elevio.ButtonEvent)
 
 	// Goroutine for local elevator
 	go elevio.PollButtons(chIoButtons)
@@ -61,6 +68,11 @@ func main() {
 	go bcast.Transmitter(udpRecover, chRecovElevToNet)
 	go bcast.Receiver(udpRecover, chRecovElevFromNet)
 
+	go bcast.Transmitter(udpAddBtn, chAddBtnNet)
+	go bcast.Receiver(udpAddBtn, chReciveBtnNet)
+	go bcast.Transmitter(udpRmBtn, chRmBtnNet)
+	go bcast.Receiver(udpRmBtn, chRmReciveBtnNet)
+
 	// Network
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
 	go peers.Receiver(udpPeer, chPeerUpdate)
@@ -68,12 +80,13 @@ func main() {
 	go bcast.Transmitter(updData, chMsgToNetwork)
 	go bcast.Receiver(updData, chMsgFromNetwork)
 
-	go distributor.Distribute2(
-		id,
-		chReAssign,
-		chMsgToNetwork,
-		chVirtualButtons,
-		chRemoveOrders)
+	//go distributor.Distribute2(
+	//	id,
+	//	chReAssign,
+	//	chMsgToNetwork,
+	//	chMsgToFsm,
+	//	chVirtualButtons,
+	//	chRemoveOrders)
 
 	eObj := boot.Elevator(id, port, chIoFloor)
 
@@ -88,7 +101,12 @@ func main() {
 		chVirtualFloor,
 		chMsgFromFsm,
 		chMsgToNetwork,
-		chPeerUpdate)
+		chPeerUpdate,
+		chAddBtnNet,
+		chRmBtnNet,
+		chClareHallFsm,
+		chReciveBtnNet,
+		chRmReciveBtnNet, )
 
 	go FSM.FSM2(
 		eObj,
@@ -97,7 +115,9 @@ func main() {
 		chIoObstical,
 		chIoStop,
 		chMsgFromFsm,
-		chRemoveOrders)
+		chRemoveOrders,
+		chReAssign,
+		chClareHallFsm)
 
 	// watchdog
 	// not implement

@@ -77,6 +77,7 @@ func FSM(
 				if valid_stop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
+					// Clare globally
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(3 * time.Second) // Reset the door timer
 					eObj.SetStateDoorOpen()          // Set state to DoorOpen

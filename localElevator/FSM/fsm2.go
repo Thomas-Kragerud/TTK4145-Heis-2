@@ -11,12 +11,14 @@ import (
 
 func FSM2(
 	initElevator elevator.Elevator,
-	chVirtualButtons <-chan elevio.ButtonEvent,
+	chVirtualButtons chan elevio.ButtonEvent,
 	chVirtualFloor <-chan int,
 	chVirtualObstical <-chan bool,
 	chVirtualStop <-chan bool,
 	chToDist chan<- elevator.Elevator,
-	chRemoveOrders <-chan elevio.ButtonEvent) {
+	chRemoveOrders chan elevio.ButtonEvent,
+	chReAssign <-chan map[string][][3]bool,
+	clearHallFsm chan<- elevio.ButtonEvent) {
 
 	eObj := &initElevator
 
@@ -32,6 +34,12 @@ func FSM2(
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(3 * time.Second)
+
+					if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
+					} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
+					}
 					chToDist <- *eObj
 
 				} else {
@@ -47,20 +55,63 @@ func FSM2(
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
-				chToDist <- *eObj
+				//chToDist <- *eObj
 				break
 
 			case elevator.DoorOpen:
 				// Add order to queue if not on the correct floor
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(3 * time.Second)
+					if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
+					} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
+					}
+
 				} else {
 					eObj.AddOrder(btnEvent)
-					chToDist <- *eObj
+					//chToDist <- *eObj
 				}
 				break
 			}
+
+		case msg := <-chReAssign:
+			go newStatesFromAssigner(
+				msg,
+				initElevator.Id,
+				chVirtualButtons,
+				chRemoveOrders,
+				*eObj)
+
 		case remove := <-chRemoveOrders:
+			switch eObj.State {
+			case elevator.Idle:
+				eObj.Orders[remove.Floor][remove.Button] = false
+				eObj.UpdateLights()
+				break
+
+			case elevator.Moving:
+				eObj.Orders[remove.Floor][remove.Button] = false
+				//elevio.SetMotorDirection(elevio.MD_Stop)
+				eObj.Dir = simple_next_direction(eObj)
+				elevio.SetMotorDirection(eObj.Dir)
+				if eObj.Dir == elevio.MD_Stop {
+					eObj.SetStateIdle()
+				}
+				eObj.UpdateLights()
+				break
+
+			case elevator.DoorOpen:
+				eObj.Orders[remove.Floor][remove.Button] = false
+				eObj.Dir = simple_next_direction(eObj)
+				elevio.SetMotorDirection(eObj.Dir)
+				if eObj.Dir == elevio.MD_Stop {
+					eObj.SetStateIdle()
+				}
+				eObj.UpdateLights()
+				break
+
+			}
 			eObj.Orders[remove.Floor][remove.Button] = false
 
 		case floor := <-chVirtualFloor:
@@ -72,8 +123,14 @@ func FSM2(
 				//** If request say we should stop at this floor
 				if valid_stop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
+					if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
+					} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
+						clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
+					}
+					eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
+
 					doorTimer.Reset(3 * time.Second) // Reset the door timer
 					eObj.SetStateDoorOpen()          // Set state to DoorOpen
 					eObj.UpdateLights()              // Update alle elevator lights
@@ -136,6 +193,31 @@ func FSM2(
 			//case <-updateTimer.C:
 			//	chMsgToNetwork <- *eObj
 			//	updateTimer.Reset(500 * time.Millisecond)
+		}
+	}
+}
+
+func newStatesFromAssigner(
+	newStates map[string][][3]bool,
+	pid string,
+	chVirtualButtons chan<- elevio.ButtonEvent,
+	chRemoveOrders chan<- elevio.ButtonEvent,
+	e elevator.Elevator) {
+	for id, orders := range newStates {
+		if id == pid {
+			for f := range orders {
+				for b := range orders[f] {
+					if orders[f][b] {
+						if !e.Orders[f][b] {
+							chVirtualButtons <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
+						}
+					} else {
+						if e.Orders[f][b] {
+							chRemoveOrders <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
+						}
+					}
+				}
+			}
 		}
 	}
 }
