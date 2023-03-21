@@ -7,6 +7,7 @@ import (
 	"Project/localElevator/elevator"
 	"Project/network/peers"
 	"fmt"
+	"sync"
 )
 
 type reciveElevator struct {
@@ -14,6 +15,8 @@ type reciveElevator struct {
 	Alive    bool
 	version  int
 }
+
+var mu sync.Mutex
 
 func Run(
 	elevator elevator.Elevator,
