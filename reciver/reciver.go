@@ -80,7 +80,7 @@ func Run(
 			r.version++
 			elevatorMap[thisElev.Id] = r
 			chMsgToNetwork <- r.Elevator
-			go reRunCost(elevatorMap, chReAssign, hall)
+			//go reRunCost(elevatorMap, chReAssign, hall)
 
 		case p := <-chPeerUpdate:
 			fmt.Printf("Peer uptade: \n")
@@ -106,6 +106,10 @@ func Run(
 
 		case elevObj := <-chMsgFromNetwork:
 			if elevObj.Id == thisElev.Id {
+				r := elevatorMap[thisElev.Id]
+				r.Elevator = elevObj
+				r.version++
+				elevatorMap[thisElev.Id] = r
 				go reRunCost(elevatorMap, chReAssign, hall)
 				// If have not seen this elevator before
 			} else if _, ok := elevatorMap[elevObj.Id]; !ok {
