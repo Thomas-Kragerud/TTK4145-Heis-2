@@ -9,15 +9,15 @@ import (
 	"fmt"
 )
 
-type elevatorState int
+type ElevatorState int
 
 const (
-	Idle     elevatorState = 0
-	DoorOpen elevatorState = 1
-	Moving   elevatorState = 2
+	Idle     ElevatorState = 0
+	DoorOpen ElevatorState = 1
+	Moving   ElevatorState = 2
 )
 
-var _stateToString = map[elevatorState]string{
+var _stateToString = map[ElevatorState]string{
 	Idle:     "idle",
 	DoorOpen: "doorOpen",
 	Moving:   "moving",
@@ -38,7 +38,7 @@ type Elevator struct {
 	Floor  int
 	Dir    elevio.MotorDirection
 	Orders [][]bool
-	State  elevatorState
+	State  ElevatorState
 	Id     string
 	Obs    bool // Obstruction
 }
@@ -166,4 +166,8 @@ func (e *Elevator) SetStateIdle() {
 
 func (e *Elevator) SetStateMoving() {
 	e.State = Moving
+}
+
+func ToStringElevatorState(state ElevatorState) string {
+	return _stateToString[state]
 }
