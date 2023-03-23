@@ -48,6 +48,7 @@ func Assign(inData config.HRAInput) map[string][][3]bool {
 		fmt.Println("json.Unmarshal error: ", err)
 	}
 
+	fmt.Println("Assigner output: ", *output)
 	return *output
 
 }

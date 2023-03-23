@@ -6,7 +6,7 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"Project/network/peers"
-	"fmt"
+	//"fmt"
 	"sync"
 )
 
@@ -89,10 +89,10 @@ func Run(
 			//go reRunCost(elevatorMap, chReAssign, hall)
 
 		case p := <-chPeerUpdate:
-			fmt.Printf("Peer uptade: \n")
-			fmt.Printf("Peers %q\n", p.Peers)
-			fmt.Printf(" New: %q\n", p.New)
-			fmt.Printf(" Lost: %q\n", p.Lost)
+			//fmt.Printf("Peer uptade: \n")
+			//fmt.Printf("Peers %q\n", p.Peers)
+			//fmt.Printf(" New: %q\n", p.New)
+			//fmt.Printf(" Lost: %q\n", p.Lost)
 			for _, val := range p.Lost {
 				if e, ok := elevatorMap[val]; ok {
 					e.Alive = false
@@ -102,7 +102,7 @@ func Run(
 			// Elevator is reborn
 			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
 				if e.Elevator.Id == thisElev.Id {
-					fmt.Printf("Jeg så meg selv dø??\n")
+					//fmt.Printf("Jeg så meg selv dø??\n")
 				}
 				e.Alive = true
 				elevatorMap[e.Elevator.Id] = e
@@ -118,9 +118,12 @@ func Run(
 				elevatorMap[thisElev.Id] = r
 				// If have not seen this elevator before
 			} else if _, ok := elevatorMap[elevObj.Id]; !ok {
-				fmt.Printf("New elevator %s\n", elevObj.Id)
+				//fmt.Printf("New elevator %s\n", elevObj.Id)
 				newElevator := reciveElevator{elevObj, true, 0}
 				elevatorMap[elevObj.Id] = newElevator
+				this := elevatorMap[thisElev.Id]
+				chMsgToNetwork <- this.Elevator
+				
 				go reRunCost(elevatorMap, chReAssign, hall)
 			} else {
 				oldElevator := elevatorMap[elevObj.Id]
@@ -147,7 +150,7 @@ func reRunCost(elevatorMap map[string]reciveElevator,
 	}
 	for id, val := range elevatorMap {
 		if val.Alive {
-			fmt.Printf("Elevator %s is alive\n", id)
+			//fmt.Printf("Elevator %s is alive\n", id)
 			hraElev := val.Elevator.ToHRA()
 			input.States[id] = hraElev
 		}

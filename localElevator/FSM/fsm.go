@@ -151,6 +151,7 @@ func simple_next_direction(e *elevator.Elevator) elevio.MotorDirection {
 	// Idle: Hvis ingen ordre
 	// Motsatt retning: Hvis ordre (else)
 	if e.OrderIsEmpty() {
+		//Kan mekke funksjon som kjører til nærmeste etasje
 		return elevio.MD_Stop
 	} else {
 		switch e.Dir {
