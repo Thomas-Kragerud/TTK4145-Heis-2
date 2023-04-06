@@ -7,6 +7,7 @@ import (
 	"Project/localElevator/elevator"
 	"Project/network/bcast"
 	"Project/network/peers"
+	"Project/networkHandler"
 	"Project/reciver"
 	"flag"
 )
@@ -28,8 +29,10 @@ func main() {
 	// ****** Set up channels ******
 
 	// Channels for distribution
-	chMsgToNetwork := make(chan elevator.Elevator)
-	chMsgFromNetwork := make(chan elevator.Elevator)
+	//chMsgToNetwork := make(chan elevator.Elevator)
+	//chMsgFromNetwork := make(chan elevator.Elevator)
+	chMsgToNetwork := make(chan networkHandler.NetworkPackage)
+	chMsgFromNetwork := make(chan networkHandler.NetworkPackage)
 
 	chRecovElevToNet := make(chan elevator.Elevator)
 	chRecovElevFromNet := make(chan elevator.Elevator)
