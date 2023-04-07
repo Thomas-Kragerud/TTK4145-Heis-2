@@ -4,6 +4,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"Project/localElevator/elevator"
+	"Project/localElevator/fsm_utils"
 	"fmt"
 	"os"
 	"time"
@@ -42,14 +43,14 @@ func FSM2(
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(3 * time.Second)
 
-					clear_hall_orders_at_floor(eObj, clearHallFsm)
+					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 
 					//chToDist <- *eObj
 
 				} else {
-					eObj.AddOrder(btnEvent)                // Add order to orders
-					eObj.Dir = simple_next_direction(eObj) // Find direction
-					elevio.SetMotorDirection(eObj.Dir)     // Set direction
+					eObj.AddOrder(btnEvent)                     // Add order to orders
+					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction
+					elevio.SetMotorDirection(eObj.Dir)          // Set direction
 
 					eObj.SetStateMoving()
 
@@ -67,7 +68,7 @@ func FSM2(
 				// Add order to queue if not on the correct floor
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(3 * time.Second)
-					clear_hall_orders_at_floor(eObj, clearHallFsm)
+					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 					eObj.UpdateLights()
 
 				} else {
@@ -78,7 +79,7 @@ func FSM2(
 			}
 
 		case msg := <-chReAssign:
-			go newStatesFromAssigner(
+			go fsm_utils.NewStatesFromAssigner(
 				msg,
 				initElevator.Id,
 				chVirtualButtons,
@@ -96,9 +97,9 @@ func FSM2(
 				eObj.Orders[remove.Floor][remove.Button] = false
 				eObj.UpdateLights()
 				//elevio.SetMotorDirection(elevio.MD_Stop)
-				eObj.Dir = simple_next_direction(eObj)
+				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
-				
+
 				if eObj.Dir == elevio.MD_Stop {
 					eObj.SetStateIdle()
 				} else {
@@ -125,9 +126,9 @@ func FSM2(
 			// Case Idle and Door open can not happen
 			case elevator.Moving:
 				//** If request say we should stop at this floor
-				if valid_stop(eObj) {
+				if fsm_utils.IsValidStop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					clear_hall_orders_at_floor(eObj, clearHallFsm)
+					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 					eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
 
@@ -138,7 +139,7 @@ func FSM2(
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.SetDirectionStop()                  // Set direction to stop
-					eObj.Dir = simple_next_direction(eObj)
+					eObj.Dir = fsm_utils.GetNextDirection(eObj)
 					elevio.SetMotorDirection(eObj.Dir)
 
 					if eObj.Dir == elevio.MD_Stop {
@@ -191,9 +192,9 @@ func FSM2(
 					doorTimer.Reset(3 * time.Second)
 					break
 				}
-				clear_hall_orders_at_floor(eObj, clearHallFsm)
+				fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
-				eObj.Dir = simple_next_direction(eObj)
+				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 				elevio.SetDoorOpenLamp(false)
 
@@ -209,39 +210,5 @@ func FSM2(
 			//	chMsgToNetwork <- *eObj
 			//	updateTimer.Reset(500 * time.Millisecond)
 		}
-	}
-}
-
-func newStatesFromAssigner(
-	newStates map[string][][3]bool,
-	pid string,
-	chVirtualButtons chan<- elevio.ButtonEvent,
-	chRemoveOrders chan<- elevio.ButtonEvent,
-	e elevator.Elevator) {
-	for id, ord := range newStates {
-		if id == pid {
-			//fmt.Printf("New states from assigner: %+v", ord)
-			for f := range ord {
-				for b := range ord[f] {
-					if ord[f][b] {
-						//f !e.Orders[f][b] {
-						chVirtualButtons <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
-						//}
-					} else {
-						if e.Orders[f][b] {
-							chRemoveOrders <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-func clear_hall_orders_at_floor(eObj *elevator.Elevator, clearHallFsm chan<- elevio.ButtonEvent) {
-	if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
-		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
-	} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
-		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
 	}
 }
