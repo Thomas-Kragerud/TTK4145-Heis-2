@@ -5,9 +5,9 @@ import (
 	"Project/localElevator/FSM"
 	"Project/localElevator/boot"
 	"Project/localElevator/elevator"
+	"Project/messageHandler"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"Project/networkHandler"
 	"Project/reciver"
 	"flag"
 )
@@ -31,8 +31,8 @@ func main() {
 	// Channels for distribution
 	//chMsgToNetwork := make(chan elevator.Elevator)
 	//chMsgFromNetwork := make(chan elevator.Elevator)
-	chMsgToNetwork := make(chan networkHandler.NetworkPackage)
-	chMsgFromNetwork := make(chan networkHandler.NetworkPackage)
+	chMsgToNetwork := make(chan messageHandler.NetworkPackage)
+	chMsgFromNetwork := make(chan messageHandler.NetworkPackage)
 
 	chRecovElevToNet := make(chan elevator.Elevator)
 	chRecovElevFromNet := make(chan elevator.Elevator)
@@ -111,7 +111,7 @@ func main() {
 		chReciveBtnNet,
 		chRmReciveBtnNet)
 
-	go FSM.FSM2(
+	go FSM.FSM(
 		eObj,
 		chVirtualButtons,
 		chIoFloor,

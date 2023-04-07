@@ -1,10 +1,12 @@
 package config
 
+import "time"
+
 // Change to var when everythig is working
 const NumFloors = 4
 const NumButtons = 3
 
-const DoorOpenTime = 3
+const DoorOpenTime = 3 * time.Second
 
 type HRAElevState struct {
 	Behavior    string `json:"behaviour"`

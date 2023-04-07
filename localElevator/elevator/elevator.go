@@ -98,9 +98,14 @@ func (e *Elevator) ClearOrderAtFloor(floor int) {
 	}
 }
 
+// ClearAllOrders - clears every order in the order matrix
+// and turns off all the lights
 func (e *Elevator) ClearAllOrders() {
 	for f := 0; f < config.NumFloors; f++ {
 		e.ClearOrderAtFloor(f)
+		for b := elevio.ButtonType(0); b < 3; b++ {
+			elevio.SetButtonLamp(b, f, false)
+		}
 	}
 }
 

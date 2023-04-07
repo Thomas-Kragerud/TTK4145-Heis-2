@@ -5,9 +5,8 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"Project/localElevator/elevator"
+	"Project/messageHandler"
 	"Project/network/peers"
-	"Project/networkHandler"
-
 	//"fmt"
 	"sync"
 )
@@ -26,11 +25,11 @@ func Run(
 	chIoFloor <-chan int,
 	chIoObstical <-chan bool,
 	chIoStop <-chan bool,
-	chMsgFromNetwork <-chan networkHandler.NetworkPackage,
+	chMsgFromNetwork <-chan messageHandler.NetworkPackage,
 	chReAssign chan<- map[string][][3]bool,
 	chVirtualFloor chan<- int,
 	chFromFSM <-chan elevator.Elevator,
-	chMsgToNetwork chan<- networkHandler.NetworkPackage,
+	chMsgToNetwork chan<- messageHandler.NetworkPackage,
 	chPeerUpdate <-chan peers.PeerUpdate,
 	chAddBtnNet chan elevio.ButtonEvent,
 	chRmBtnNet chan elevio.ButtonEvent,
@@ -56,8 +55,8 @@ func Run(
 				r.Elevator.AddOrder(ioBtn)
 				elevatorMap[thisElev.Id] = r
 				go reRunCost(elevatorMap, chReAssign, hall)
-				msg := networkHandler.NetworkPackage{
-					networkHandler.NewCab,
+				msg := messageHandler.NetworkPackage{
+					messageHandler.NewCab,
 					r.Elevator,
 					ioBtn}
 				chMsgToNetwork <- msg
@@ -67,8 +66,8 @@ func Run(
 				r.Elevator.AddOrder(ioBtn)
 				elevatorMap[thisElev.Id] = r
 				//chAddBtnNet <- ioBtn
-				msg := networkHandler.NetworkPackage{
-					networkHandler.NewHall,
+				msg := messageHandler.NetworkPackage{
+					messageHandler.NewHall,
 					r.Elevator,
 					ioBtn}
 				chMsgToNetwork <- msg
@@ -92,8 +91,8 @@ func Run(
 			r := elevatorMap[thisElev.Id]
 			r.Elevator = updateThis
 			elevatorMap[thisElev.Id] = r
-			msg := networkHandler.NetworkPackage{
-				Event:    networkHandler.UpdateElevState,
+			msg := messageHandler.NetworkPackage{
+				Event:    messageHandler.UpdateElevState,
 				Elevator: r.Elevator}
 			chMsgToNetwork <- msg
 			//go reRunCost(elevatorMap, chReAssign, hall)
@@ -122,24 +121,24 @@ func Run(
 
 		case msgFromNet := <-chMsgFromNetwork:
 			switch msgFromNet.Event {
-			case networkHandler.NewCab:
+			case messageHandler.NewCab:
 
-			case networkHandler.UpdateElevState:
+			case messageHandler.UpdateElevState:
 
-			case networkHandler.NewHall:
+			case messageHandler.NewHall:
 				// Just to see if works
 
 				hall = addBTN(hall, msgFromNet.BtnEvent)
 				updateHallLights(hall)
 				go reRunCost(elevatorMap, chReAssign, hall)
 
-			case networkHandler.AkHall:
+			case messageHandler.AkHall:
 
-			case networkHandler.RmHall:
+			case messageHandler.ClareHall:
 
-			case networkHandler.AkRmHall:
+			case messageHandler.AkRmHall:
 
-			case networkHandler.PeriodicUpdate:
+			case messageHandler.PeriodicUpdate:
 
 			}
 			if msgFromNet.Elevator.Id == thisElev.Id {
@@ -153,8 +152,8 @@ func Run(
 				newElevator := reciveElevator{msgFromNet.Elevator, true, 0}
 				elevatorMap[msgFromNet.Elevator.Id] = newElevator
 				this := elevatorMap[thisElev.Id] // Can be removed when by sending periodically
-				msg := networkHandler.NetworkPackage{
-					Event:    networkHandler.UpdateElevState,
+				msg := messageHandler.NetworkPackage{
+					Event:    messageHandler.UpdateElevState,
 					Elevator: this.Elevator}
 				chMsgToNetwork <- msg
 

@@ -1,4 +1,4 @@
-package FSM
+package FSM2
 
 import (
 	"Project/config"
@@ -10,51 +10,42 @@ import (
 	"time"
 )
 
-func FSM2(
+func FsmTest(
 	initElevator elevator.Elevator,
-	chVirtualButtons chan elevio.ButtonEvent,
 	chVirtualFloor <-chan int,
 	chVirtualObstical <-chan bool,
 	chVirtualStop <-chan bool,
 	chToDist chan<- elevator.Elevator,
-	chRemoveOrders chan elevio.ButtonEvent,
-	chReAssign <-chan map[string][][3]bool,
-	clearHallFsm chan<- elevio.ButtonEvent) {
+	chRmButton <-chan elevio.ButtonEvent,
+	chAddButton <-chan elevio.ButtonEvent,
+
+) {
 
 	c := initElevator
 	eObj := &c
 	chToDist <- *eObj
-	// Main loop for FSM
+
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
 	for {
-		//fmt.Printf("Elevator is in state: %v\n", eObj.State)
-		//fmt.Printf(" %s\n", eObj.String())
 		eObj.UpdateLights()
 		select {
-		case btnEvent := <-chVirtualButtons:
-			//fmt.Printf("**** Button event ****\n")
-			//fmt.Printf(" %v\n", btnEvent)
+		case btnEvent := <-chAddButton:
+
 			switch eObj.State {
 			case elevator.Idle:
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
-					//fmt.Printf("**** Button event ****\n")
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(3 * time.Second)
-
-					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
-
-					//chToDist <- *eObj
+					chToDist <- *eObj
 
 				} else {
 					eObj.AddOrder(btnEvent)                     // Add order to orders
 					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction
-
 					eObj.SetStateMoving()
-
-					//chToDist <- *eObj // Send elevator states through channel
+					chToDist <- *eObj
 				}
 				break
 
@@ -68,25 +59,17 @@ func FSM2(
 				// Add order to queue if not on the correct floor
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(3 * time.Second)
-					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 					eObj.UpdateLights()
 
 				} else {
 					eObj.AddOrder(btnEvent)
-					//chToDist <- *eObj
+
 				}
+				chToDist <- *eObj
 				break
 			}
 
-		case msg := <-chReAssign:
-			go fsm_utils.NewStatesFromAssigner(
-				msg,
-				initElevator.Id,
-				chVirtualButtons,
-				chRemoveOrders,
-				*eObj)
-
-		case remove := <-chRemoveOrders:
+		case remove := <-chRmButton:
 			switch eObj.State {
 			case elevator.Idle:
 				eObj.Orders[remove.Floor][remove.Button] = false
@@ -128,8 +111,7 @@ func FSM2(
 				//** If request say we should stop at this floor
 				if fsm_utils.IsValidStop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
-					eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
+					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
 
 					doorTimer.Reset(3 * time.Second) // Reset the door timer
@@ -192,7 +174,6 @@ func FSM2(
 					doorTimer.Reset(3 * time.Second)
 					break
 				}
-				fsm_utils.ClearHallOrdersAtFloor(eObj, clearHallFsm)
 				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
 				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
@@ -204,7 +185,7 @@ func FSM2(
 				} else {
 					eObj.SetStateMoving()
 				}
-
+				chToDist <- *eObj
 			}
 			//case <-updateTimer.C:
 			//	chMsgToNetwork <- *eObj

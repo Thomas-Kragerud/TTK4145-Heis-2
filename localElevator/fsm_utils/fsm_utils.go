@@ -137,7 +137,8 @@ func NewStatesFromAssigner(
 func ClearHallOrdersAtFloor(eObj *elevator.Elevator, clearHallFsm chan<- elevio.ButtonEvent) {
 	if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
 		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
-	} else if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
+	}
+	if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
 		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
 	}
 }

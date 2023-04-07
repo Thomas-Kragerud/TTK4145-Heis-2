@@ -26,7 +26,6 @@ func Assign(inData config.HRAInput) map[string][][3]bool {
 			"-i",
 			"dock_hra",
 			"/app/hall_request_assigner",
-			"--includeCab",
 			"--input",
 			string(jsonBytes)).CombinedOutput()
 	} else if runtime.GOOS == "windows" {
@@ -37,7 +36,6 @@ func Assign(inData config.HRAInput) map[string][][3]bool {
 	} else if runtime.GOOS == "linux" {
 		ret, err = exec.Command(
 			"costfunc/hall_request_assigner",
-			"--includeCab",
 			"-i",
 			string(jsonBytes)).CombinedOutput()
 	}
