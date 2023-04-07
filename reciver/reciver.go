@@ -7,7 +7,6 @@ import (
 	"Project/localElevator/elevator"
 	"Project/network/peers"
 	"Project/networkHandler"
-	"time"
 
 	//"fmt"
 	"sync"
@@ -49,20 +48,17 @@ func Run(
 
 	// Init disse
 
-	reAssignnRate := 500 * time.Millisecond
-	reAssignTimer := time.NewTimer(reAssignnRate) // Initialise timer
-
 	for {
 		select {
 		case ioBtn := <-chIoButtons:
 			if ioBtn.Button == elevio.BT_Cab {
-				this := elevatorMap[thisElev.Id]
-				this.Elevator.AddOrder(ioBtn) // Store newest version locally
-				elevatorMap[thisElev.Id] = this
-				//go reRunCost(elevatorMap, chReAssign, hall)
+				r := elevatorMap[thisElev.Id]
+				r.Elevator.AddOrder(ioBtn)
+				elevatorMap[thisElev.Id] = r
+				go reRunCost(elevatorMap, chReAssign, hall)
 				msg := networkHandler.NetworkPackage{
 					networkHandler.NewCab,
-					this.Elevator,
+					r.Elevator,
 					ioBtn}
 				chMsgToNetwork <- msg
 
@@ -79,12 +75,18 @@ func Run(
 				// Case when internet is not working
 			}
 
-		case btn := <-chClareHallFsm:
-			hall = rmBTN(hall, btn) // Remove locally
-			msg := networkHandler.NetworkPackage{
-				Event:    networkHandler.RmHall,
-				BtnEvent: btn}
-			chMsgToNetwork <- msg
+		case ioBtnNet := <-chReciveBtnNet:
+			hall = addBTN(hall, ioBtnNet)
+			updateHallLights(hall)
+			go reRunCost(elevatorMap, chReAssign, hall)
+
+		case c := <-chClareHallFsm:
+			chRmBtnNet <- c
+
+		case rmBtnNet := <-chRmReciveBtnNet:
+			hall = rmBTN(hall, rmBtnNet)
+			updateHallLights(hall)
+			go reRunCost(elevatorMap, chReAssign, hall)
 
 		case updateThis := <-chFromFSM:
 			r := elevatorMap[thisElev.Id]
@@ -94,64 +96,7 @@ func Run(
 				Event:    networkHandler.UpdateElevState,
 				Elevator: r.Elevator}
 			chMsgToNetwork <- msg
-
-		case msgFromNet := <-chMsgFromNetwork:
-			switch msgFromNet.Event {
-			case networkHandler.NewCab:
-				if msgFromNet.Elevator.Id == thisElev.Id {
-					// Trenger vell low key ikke å gjøre noe her
-
-				} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
-					// Hvis ikke har sett heis før
-					newElevator := reciveElevator{msgFromNet.Elevator, true, 0}
-					elevatorMap[msgFromNet.Elevator.Id] = newElevator
-					this := elevatorMap[thisElev.Id] // Can be removed when by sending periodically
-					msg := networkHandler.NetworkPackage{
-						Event:    networkHandler.UpdateElevState,
-						Elevator: this.Elevator}
-					chMsgToNetwork <- msg
-				} else {
-					oldElevator := elevatorMap[msgFromNet.Elevator.Id]
-					oldElevator.Elevator = msgFromNet.Elevator
-					oldElevator.Version++
-					elevatorMap[msgFromNet.Elevator.Id] = oldElevator
-				}
-
-			case networkHandler.UpdateElevState:
-				if msgFromNet.Elevator.Id == thisElev.Id {
-					// Trenger vell low key ikke å gjøre noe her
-
-				} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
-					// Hvis ikke har sett heis før
-					newElevator := reciveElevator{msgFromNet.Elevator, true, 0}
-					elevatorMap[msgFromNet.Elevator.Id] = newElevator
-					this := elevatorMap[thisElev.Id] // Can be removed when by sending periodically
-					msg := networkHandler.NetworkPackage{
-						Event:    networkHandler.UpdateElevState,
-						Elevator: this.Elevator}
-					chMsgToNetwork <- msg
-				} else {
-					oldElevator := elevatorMap[msgFromNet.Elevator.Id]
-					oldElevator.Elevator = msgFromNet.Elevator
-					oldElevator.Version++
-					elevatorMap[msgFromNet.Elevator.Id] = oldElevator
-				}
-
-			case networkHandler.NewHall:
-				// Just to see if works
-				hall = addBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall)
-				go reRunCost(elevatorMap, chReAssign, hall)
-
-			case networkHandler.RmHall:
-				hall = rmBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall)
-				go reRunCost(elevatorMap, chReAssign, hall)
-
-			case networkHandler.PeriodicUpdate:
-
-			}
-			break
+			//go reRunCost(elevatorMap, chReAssign, hall)
 
 		case p := <-chPeerUpdate:
 			//fmt.Printf("Peer uptade: \n")
@@ -173,10 +118,55 @@ func Run(
 				elevatorMap[e.Elevator.Id] = e
 				//chRecovElevToNet <- e.Elevator // Possible lock
 			}
-
-		case <-reAssignTimer.C:
-			reAssignTimer.Reset(reAssignnRate)
 			go reRunCost(elevatorMap, chReAssign, hall)
+
+		case msgFromNet := <-chMsgFromNetwork:
+			switch msgFromNet.Event {
+			case networkHandler.NewCab:
+
+			case networkHandler.UpdateElevState:
+
+			case networkHandler.NewHall:
+				// Just to see if works
+
+				hall = addBTN(hall, msgFromNet.BtnEvent)
+				updateHallLights(hall)
+				go reRunCost(elevatorMap, chReAssign, hall)
+
+			case networkHandler.AkHall:
+
+			case networkHandler.RmHall:
+
+			case networkHandler.AkRmHall:
+
+			case networkHandler.PeriodicUpdate:
+
+			}
+			if msgFromNet.Elevator.Id == thisElev.Id {
+				r := elevatorMap[thisElev.Id]
+				r.Elevator = msgFromNet.Elevator
+				r.Version++
+				elevatorMap[thisElev.Id] = r
+				// If have not seen this elevator before
+			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
+				//fmt.Printf("New elevator %s\n", elevObj.Id)
+				newElevator := reciveElevator{msgFromNet.Elevator, true, 0}
+				elevatorMap[msgFromNet.Elevator.Id] = newElevator
+				this := elevatorMap[thisElev.Id] // Can be removed when by sending periodically
+				msg := networkHandler.NetworkPackage{
+					Event:    networkHandler.UpdateElevState,
+					Elevator: this.Elevator}
+				chMsgToNetwork <- msg
+
+				go reRunCost(elevatorMap, chReAssign, hall)
+			} else {
+				oldElevator := elevatorMap[msgFromNet.Elevator.Id]
+				oldElevator.Elevator = msgFromNet.Elevator
+				oldElevator.Version++
+				elevatorMap[msgFromNet.Elevator.Id] = oldElevator
+				go reRunCost(elevatorMap, chReAssign, hall)
+			}
+			break
 
 		default:
 			continue
