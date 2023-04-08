@@ -4,6 +4,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"Project/localElevator/elevator"
+	"Project/network/peers"
 	"fmt"
 	"time"
 )
@@ -16,6 +17,7 @@ func Handel(
 	chFromFsm <-chan elevator.Elevator,
 	chAddButtonToFsm chan<- elevio.ButtonEvent,
 	chRmButtonFromFsm chan<- elevio.ButtonEvent,
+	chPeerUpdate <-chan peers.PeerUpdate,
 ) {
 
 	thisElev := <-chFromFsm
@@ -62,7 +64,6 @@ func Handel(
 					e.Elevator,
 					ioButton,
 				}
-				fmt.Printf("Regg\n")
 				chMsgToNetwork <- msg
 			}
 
@@ -93,12 +94,16 @@ func Handel(
 
 		case msgFromNet := <-chMsgFromNetwork:
 			if msgFromNet.Elevator.Id == thisElev.Id {
-				// Do not think i need this
-				e := elevatorMap[thisElev.Id]
-				e.Elevator = msgFromNet.Elevator
-				e.Version++
-				elevatorMap[thisElev.Id] = e
-				break
+				if msgFromNet.Event == Recover {
+					for f := 0; f < config.NumFloors; f++ {
+						for b := elevio.ButtonType(0); b < 3; b++ {
+							if msgFromNet.Elevator.Orders[f][b] {
+								chAddButtonToFsm <- elevio.ButtonEvent{f, b}
+							}
+						}
+					}
+				}
+
 			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
 				// Have not seen this elevator before
 				newElevator := ElevatorUpdate{msgFromNet.Elevator, true, 0}
@@ -108,6 +113,16 @@ func Handel(
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
+			} else if e, ok := elevatorMap[msgFromNet.Elevator.Id]; ok && !e.Alive {
+				// Her forsøker jeg å revive heisen når den først er registrert
+				e.Alive = true
+				elevatorMap[e.Elevator.Id] = e
+				fmt.Printf("Trying to recover elevator but from another place %s", e.Elevator.Id)
+				chMsgToNetwork <- NetworkPackage{
+					Event:    Recover,
+					Elevator: e.Elevator,
+				}
+
 			} else {
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
@@ -148,17 +163,47 @@ func Handel(
 				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
 				updateHallLights(hall)
 
+				//case Recover:
+				//	if thisElev.Id == msgFromNet.Elevator.Id {
+				//		fmt.Printf("I am starting to remember\n")
+				//		for f := 0; f < config.NumFloors; f++ {
+				//			for b := elevio.ButtonType(0); b < 3; b++ {
+				//				if msgFromNet.Elevator.Orders[f][b] {
+				//					chAddButtonToFsm <- elevio.ButtonEvent{f, b}
+				//				}
+				//			}
+				//		}
+				//	}
+
 			}
 
 		case <-reRunTimer.C:
 			reRunTimer.Reset(reRunRate)
 			fromReAssigner := reAssign(thisElev.Id, elevatorMap, hall)
-			for _, val := range fromReAssigner {
-				if val.Type == Add {
-					chAddButtonToFsm <- val.BtnEvent
-				} else if val.Type == Remove {
-					chRmButtonFromFsm <- val.BtnEvent
+			sendToFsm(fromReAssigner)
+
+		case p := <-chPeerUpdate:
+			for _, id := range p.Lost {
+				if e, ok := elevatorMap[id]; ok {
+					e.Alive = false
+					elevatorMap[id] = e
+					fmt.Printf("We lost %s\n", id)
 				}
+			}
+			// Elevator is reborn
+			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
+				if e.Elevator.Id == thisElev.Id {
+					//fmt.Printf("Jeg så meg selv dø??\n")
+				}
+				//e.Alive = true
+				//elevatorMap[e.Elevator.Id] = e
+				fmt.Printf("Would be cool if %s resurected \n", p.New)
+				fmt.Printf(e.Elevator.String())
+				fmt.Println()
+				//chMsgToNetwork <- NetworkPackage{
+				//	Event:    Recover,
+				//	Elevator: e.Elevator,
+				//}
 			}
 		}
 	}

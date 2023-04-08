@@ -24,10 +24,8 @@ const (
 	NewCab          networkEvent = 0
 	UpdateElevState networkEvent = 1
 	NewHall         networkEvent = 2
-	AkHall          networkEvent = 3
 	ClareHall       networkEvent = 4
-	AkRmHall        networkEvent = 5
-	PeriodicUpdate  networkEvent = 6
+	Recover         networkEvent = 5
 )
 
 type NetworkPackage struct {

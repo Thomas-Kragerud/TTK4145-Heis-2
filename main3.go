@@ -11,11 +11,14 @@ import (
 	"flag"
 )
 
+const (
+	udpPeer = 6001
+	udpData = 6201
+)
+
 func main() {
 	var id string
 	var port string
-	udpPeer := 6001
-	udpData := 6002
 
 	flag.StringVar(&port, "port", "", "Port of this elevator")
 	flag.StringVar(&id, "id", "", "id of this elevator")
@@ -24,7 +27,7 @@ func main() {
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 100)
 	chMsgToNetwork := make(chan messageHandler.NetworkPackage)
-	chMsgFromNetwork := make(chan messageHandler.NetworkPackage, 100)
+	chMsgFromNetwork := make(chan messageHandler.NetworkPackage)
 
 	chPeerUpdate := make(chan peers.PeerUpdate)
 	chPeerTxEnable := make(chan bool)
@@ -44,9 +47,6 @@ func main() {
 	go elevio.PollStopButton(chIoStop)
 	go elevio.PollButtons(chIoButtons)
 
-	// Boot elevator
-	eObj := boot.Elevator(id, port, chIoFloor)
-
 	// Goroutine for networkMessaging
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
 	go peers.Receiver(udpPeer, chPeerUpdate)
@@ -54,15 +54,16 @@ func main() {
 	go bcast.Transmitter(udpData, chMsgToNetwork)
 	go bcast.Receiver(udpData, chMsgFromNetwork)
 
-	go FSM2.FsmTest(
+	eObj := boot.Elevator(id, port, chIoFloor)
+
+	go FSM2.FSM2(
 		eObj,
 		chIoFloor,
 		chIoObstical,
 		chIoStop,
 		chNewState,
-		chRmButton,
 		chAddButton,
-	)
+		chRmButton)
 
 	go messageHandler.Handel(
 		eObj,
