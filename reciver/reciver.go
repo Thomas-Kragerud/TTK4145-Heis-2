@@ -132,13 +132,7 @@ func Run(
 				updateHallLights(hall)
 				go reRunCost(elevatorMap, chReAssign, hall)
 
-			case messageHandler.AkHall:
-
 			case messageHandler.ClareHall:
-
-			case messageHandler.AkRmHall:
-
-			case messageHandler.PeriodicUpdate:
 
 			}
 			if msgFromNet.Elevator.Id == thisElev.Id {

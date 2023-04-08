@@ -163,18 +163,6 @@ func Handel(
 				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
 				updateHallLights(hall)
 
-				//case Recover:
-				//	if thisElev.Id == msgFromNet.Elevator.Id {
-				//		fmt.Printf("I am starting to remember\n")
-				//		for f := 0; f < config.NumFloors; f++ {
-				//			for b := elevio.ButtonType(0); b < 3; b++ {
-				//				if msgFromNet.Elevator.Orders[f][b] {
-				//					chAddButtonToFsm <- elevio.ButtonEvent{f, b}
-				//				}
-				//			}
-				//		}
-				//	}
-
 			}
 
 		case <-reRunTimer.C:
@@ -190,6 +178,7 @@ func Handel(
 					fmt.Printf("We lost %s\n", id)
 				}
 			}
+			// Hva hvis den får peer update men ikke har noe kjennskap til de andre?
 			// Elevator is reborn
 			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
 				if e.Elevator.Id == thisElev.Id {
