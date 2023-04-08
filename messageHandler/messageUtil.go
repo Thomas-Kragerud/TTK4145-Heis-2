@@ -4,6 +4,7 @@ import (
 	"Project/assigner"
 	"Project/config"
 	"Project/elevio"
+	"errors"
 )
 
 // reAssign
@@ -12,7 +13,7 @@ import (
 func reAssign(
 	pid string,
 	elevatorMap map[string]ElevatorUpdate,
-	hall [][2]bool) []assignValue {
+	hall [][2]bool) ([]assignValue, error) {
 
 	input := config.HRAInput{
 		States:       make(map[string]config.HRAElevState),
@@ -23,12 +24,14 @@ func reAssign(
 			input.States[id] = hraElev
 		}
 	}
+	if !elevatorMap[pid].Alive {
+		return []assignValue{}, errors.New("This elevator was not alive when running, and calculations are false ")
+	}
 	input.HallRequests = hall
 	result := assigner.Assign(input)
 	hallBefore := elevatorMap[pid].Elevator.Orders
 	hallAfter := result[pid]
 	fromReAssigner := make([]assignValue, 0)
-
 	for f := 0; f < config.NumFloors; f++ {
 		for b := elevio.ButtonType(0); b < 2; b++ {
 			if hallAfter[f][b] && !hallBefore[f][b] {
@@ -43,7 +46,7 @@ func reAssign(
 			}
 		}
 	}
-	return fromReAssigner
+	return fromReAssigner, nil
 }
 
 func addHallBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {

@@ -32,7 +32,7 @@ func main() {
 	chPeerUpdate := make(chan peers.PeerUpdate)
 	chPeerTxEnable := make(chan bool)
 
-	chNewState := make(chan elevator.Elevator)
+	chStateUpdate := make(chan elevator.Elevator)
 
 	// Channels for local elevator
 	chIoFloor := make(chan int)
@@ -61,7 +61,7 @@ func main() {
 		chIoFloor,
 		chIoObstical,
 		chIoStop,
-		chNewState,
+		chStateUpdate,
 		chAddButton,
 		chRmButton)
 
@@ -70,7 +70,7 @@ func main() {
 		chIoButtons,
 		chMsgFromNetwork,
 		chMsgToNetwork,
-		chNewState,
+		chStateUpdate,
 		chAddButton,
 		chRmButton,
 		chPeerUpdate,

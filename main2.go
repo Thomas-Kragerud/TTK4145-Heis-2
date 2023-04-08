@@ -23,13 +23,14 @@ func main() {
 
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 100)
-	chMsgToNetwork := make(chan messageHandler.NetworkPackage)
+	chMsgToNetwork := make(chan messageHandler.NetworkPackage, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
 	chMsgFromNetwork := make(chan messageHandler.NetworkPackage, 100)
 
 	chPeerUpdate := make(chan peers.PeerUpdate)
 	chPeerTxEnable := make(chan bool)
 
-	chNewState := make(chan elevator.Elevator)
+	// Buffer so fsm does not need to wait for messageHandler
+	chNewState := make(chan elevator.Elevator, 100)
 
 	// Channels for local elevator
 	chIoFloor := make(chan int)
@@ -46,7 +47,7 @@ func main() {
 
 	// Boot elevator
 	eObj := boot.Elevator(id, port, chIoFloor)
-
+	eObjCopy := eObj.Clone()
 	// Goroutine for networkMessaging
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
 	go peers.Receiver(udpPeer, chPeerUpdate)
@@ -55,7 +56,7 @@ func main() {
 	go bcast.Receiver(udpData, chMsgFromNetwork)
 
 	go FSM2.FsmTest(
-		eObj,
+		&eObj,
 		chIoFloor,
 		chIoObstical,
 		chIoStop,
@@ -65,7 +66,7 @@ func main() {
 	)
 
 	go messageHandler.Handel(
-		eObj,
+		&eObjCopy,
 		chIoButtons,
 		chMsgFromNetwork,
 		chMsgToNetwork,

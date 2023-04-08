@@ -23,17 +23,6 @@ var _stateToString = map[Elevatorstate]string{
 	Moving:   "moving",
 }
 
-type ElevatorInterface interface {
-	//Init()
-	String() string
-	//UpdateLights()
-	//AddOrder(event elevio.ButtonEvent)
-	//SetDirectionDown()
-	//SetDirectionUp()
-	//SetDirectionStop()
-	//SetFloor(floor int)
-}
-
 type Elevator struct {
 	Floor  int
 	Dir    elevio.MotorDirection
@@ -41,6 +30,7 @@ type Elevator struct {
 	State  Elevatorstate
 	Id     string
 	Obs    bool // Obstruction
+	//OrderMutex sync.Mutex // Add a mutex to the Elevator struct
 }
 
 // Init initialize the elevator
@@ -50,13 +40,31 @@ func (e *Elevator) Init(Id string) {
 	for floor := range e.Orders {
 		e.Orders[floor] = make([]bool, config.NumButtons)
 	}
-
 	// Set the rest of the parameters
 	e.Id = Id
 	e.Floor = 0
 	e.State = Idle
 	e.Dir = elevio.MD_Stop
 	e.Obs = false
+}
+
+func (e *Elevator) Clone() Elevator {
+	// Create a deep copy of the Orders field
+	clonedOrders := make([][]bool, len(e.Orders))
+	for i := range e.Orders {
+		clonedOrders[i] = make([]bool, len(e.Orders[i]))
+		copy(clonedOrders[i], e.Orders[i])
+	}
+
+	return Elevator{
+		State:  e.State,
+		Floor:  e.Floor,
+		Dir:    e.Dir,
+		Orders: clonedOrders,
+		Id:     e.Id,
+		Obs:    e.Obs,
+		//OrderMutex: sync.Mutex{}, // Create a new mutex for the cloned object
+	}
 }
 
 // String toString method for elevator object
@@ -74,11 +82,12 @@ func (e *Elevator) String() string {
 		}
 		str += "|\n"
 	}
-
 	return str
 }
 
-// UpdateLights oppdaterer alle knappene til heisen
+// UpdateLights - updates all lights except the hall lights
+//
+//	which are set in the messageHandler.go event loop
 func (e *Elevator) UpdateLights() {
 	elevio.SetFloorIndicator(e.Floor)
 	for floor := range e.Orders {
@@ -86,32 +95,34 @@ func (e *Elevator) UpdateLights() {
 	}
 }
 
-// *** Functions for local elevator order list ***
-
+// AddOrder - adds a ButtonEvent to the Order matrix
 func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 	e.Orders[event.Floor][event.Button] = true
 }
 
+// ClearOrderAtFloor clears all orders at the specified floor in the elevator's order matrix.
 func (e *Elevator) ClearOrderAtFloor(floor int) {
+	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
+	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
 	for btn, _ := range e.Orders[floor] {
 		e.Orders[floor][btn] = false
 	}
 }
 
-// ClearAllOrders - clears every order in the order matrix
-// and turns off all the lights
+func (e *Elevator) ClearOrderFromBtn(button elevio.ButtonEvent) {
+	//e.OrderMutex.Lock()
+	//defer e.OrderMutex.Unlock()
+	e.Orders[button.Floor][button.Button] = false
+}
+
+// ClearAllOrders removes all orders from the elevator's order matrix
+// and turns off all associated button lamps.
 func (e *Elevator) ClearAllOrders() {
 	for f := 0; f < config.NumFloors; f++ {
 		e.ClearOrderAtFloor(f)
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, f, false)
 		}
-	}
-}
-
-func (e *Elevator) ClearAtCurrentFloor() {
-	for btn, _ := range e.Orders[e.Floor] {
-		e.Orders[e.Floor][btn] = false
 	}
 }
 
@@ -128,15 +139,7 @@ func (e *Elevator) OrderIsEmpty() bool {
 
 // ** Trenger jeg disse funksjone fra et kodekvali perspektiv?? **
 
-// SetDirectionDown sets the motor direction to down
-func (e *Elevator) SetDirectionDown() {
-	e.Dir = elevio.MD_Down
-}
-
-func (e *Elevator) SetDirectionUp() {
-	e.Dir = elevio.MD_Up
-}
-
+// Delete when deleting old fsm
 func (e *Elevator) SetDirectionStop() {
 	e.Dir = elevio.MD_Stop
 }
@@ -158,6 +161,8 @@ func (e *Elevator) SetStateMoving() {
 }
 
 func (e *Elevator) ToHRA() config.HRAElevState {
+	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
+	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
 	var cabReq []bool
 	for _, btn := range e.Orders {
 		cabReq = append(cabReq, btn[2])
