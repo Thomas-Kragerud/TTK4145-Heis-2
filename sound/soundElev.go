@@ -67,3 +67,38 @@ func AtFloor(floor int) {
 
 	wg.Wait()
 }
+
+func IAmBack() {
+	filePath := "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/Imback_elevator2.mp3"
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatalf("Failed to open mp3: %v", err)
+	}
+	defer file.Close()
+	// Decode the MP3 file
+	streamer, format, err := mp3.Decode(file)
+	if err != nil {
+		log.Fatalf("Failed o decode MP3 file: %v ", err)
+	}
+	defer streamer.Close()
+
+	// Initialize the speaker, if not already initialized
+	initSpeaker(format.SampleRate)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Use a buffered channel to avoid blocking the speaker
+	done := make(chan struct{}, 1)
+	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+		done <- struct{}{}
+	})))
+
+	// Use a non-blocking select to wait for the audio to finish playing
+	select {
+	case <-done:
+		wg.Done()
+	case <-time.After(10 * time.Second): // Timeout based on the length of your audio file
+	}
+	wg.Wait()
+}

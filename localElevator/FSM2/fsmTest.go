@@ -30,6 +30,7 @@ func FsmTest(
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
 	for {
+		gui.SetArrowDirection(eObj.Dir)
 		eObj.UpdateLights()
 		select {
 		case btnEvent := <-chAddButton:
@@ -38,6 +39,7 @@ func FsmTest(
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
+					gui.SetDoorOpenLight(true)
 					doorTimer.Reset(3 * time.Second)
 					chStateUpdate <- *eObj
 
@@ -48,6 +50,7 @@ func FsmTest(
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction
 					eObj.SetStateMoving()
 					chStateUpdate <- *eObj
+
 				}
 				break
 
@@ -109,6 +112,7 @@ func FsmTest(
 			}
 
 		case floor := <-chIoFloor:
+			fmt.Printf("Called gui %v\n", eObj.Dir)
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
 			switch eObj.State {
@@ -125,6 +129,7 @@ func FsmTest(
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
+					gui.SetDoorOpenLight(true)
 					go sound.AtFloor(floor) // Announce the floor through the speaker
 					gui.UpdateElevatorPosition(floor)
 					doorTimer.Reset(3 * time.Second) // Reset the door timer
@@ -193,6 +198,7 @@ func FsmTest(
 				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 				elevio.SetDoorOpenLamp(false)
+				gui.SetDoorOpenLight(false)
 
 				if eObj.Dir == elevio.MD_Stop {
 					eObj.SetStateIdle()

@@ -5,6 +5,7 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"Project/network/peers"
+	"Project/sound"
 	"fmt"
 	"log"
 	"time"
@@ -112,7 +113,7 @@ func Handel(
 							}
 						}
 					}
-					//break
+					go sound.IAmBack()
 					chMsgToNetwork <- NetworkPackage{
 						Event:    RecoveredElevator,
 						Elevator: msgFromNet.Elevator,
