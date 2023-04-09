@@ -47,6 +47,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/gui/resources" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/elevatorMessaging/messageHandler" />
       <recent name="$PROJECT_DIR$/elevatorNetwork" />

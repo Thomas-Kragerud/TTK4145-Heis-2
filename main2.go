@@ -2,6 +2,7 @@ package main
 
 import (
 	"Project/elevio"
+	"Project/gui"
 	"Project/localElevator/FSM2"
 	"Project/localElevator/boot"
 	"Project/localElevator/elevator"
@@ -75,6 +76,7 @@ func main() {
 		chRmButton,
 		chPeerUpdate,
 	)
+	gui.InitGUI()
 	select {}
 
 }

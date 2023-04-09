@@ -3,6 +3,7 @@ package FSM2
 import (
 	"Project/config"
 	"Project/elevio"
+	"Project/gui"
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm_utils"
 	"Project/sound"
@@ -124,7 +125,8 @@ func FsmTest(
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
-					go sound.AtFloor(floor)          // Announce the floor through the speaker
+					go sound.AtFloor(floor) // Announce the floor through the speaker
+					gui.UpdateElevatorPosition(floor)
 					doorTimer.Reset(3 * time.Second) // Reset the door timer
 					eObj.SetStateDoorOpen()          // Set state to DoorOpen
 					eObj.UpdateLights()              // Update alle elevator lights
