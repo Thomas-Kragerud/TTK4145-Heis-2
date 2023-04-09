@@ -9,7 +9,7 @@ import (
 
 // reAssign
 // Reassigns all hall orders
-// and returns a slice of button events that later will update the FSM
+// and returns a slice of button events that later will update the fsm
 func reAssign(
 	pid string,
 	elevatorMap map[string]ElevatorUpdate,

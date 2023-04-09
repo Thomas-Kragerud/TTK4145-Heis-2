@@ -20,6 +20,7 @@ func Handel(
 	chAddButtonToFsm chan<- elevio.ButtonEvent,
 	chRmButtonFromFsm chan<- elevio.ButtonEvent,
 	chPeerUpdate <-chan peers.PeerUpdate,
+	chAudio chan sound.SoundEvent,
 ) {
 
 	//thisElev := <-chFromFsm
@@ -30,7 +31,7 @@ func Handel(
 	reRunRate := 2000 * time.Millisecond
 	reRunTimer := time.NewTimer(reRunRate)
 
-	// Anonymous function that handles the sending to the FSM
+	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
 		for _, val := range fromReAssigner {
 			if val.Type == Add {
