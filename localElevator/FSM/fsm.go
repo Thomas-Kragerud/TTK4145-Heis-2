@@ -20,7 +20,6 @@ func FsmTest(
 	chStateUpdate chan<- elevator.Elevator,
 	chRmButton <-chan elevio.ButtonEvent,
 	chAddButton <-chan elevio.ButtonEvent,
-	chAudio chan sound.SoundEvent,
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
@@ -35,7 +34,7 @@ func FsmTest(
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
 					gui.SetDoorOpenLight(true)
-					doorTimer.Reset(3 * time.Second)
+					doorTimer.Reset(config.DoorOpenTime)
 					chStateUpdate <- *eObj
 
 				} else {
@@ -58,7 +57,7 @@ func FsmTest(
 			case elevator.DoorOpen:
 				// Add order to queue if not on the correct floor
 				if eObj.Floor == btnEvent.Floor {
-					doorTimer.Reset(3 * time.Second)
+					doorTimer.Reset(config.DoorOpenTime)
 					eObj.UpdateLights()
 
 				} else {
@@ -105,7 +104,6 @@ func FsmTest(
 			}
 
 		case floor := <-chIoFloor:
-			fmt.Printf("Called gui %v\n", eObj.Dir)
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
 			switch eObj.State {
@@ -124,10 +122,10 @@ func FsmTest(
 					gui.SetDoorOpenLight(true)
 					go sound.AtFloor(floor) // Announce the floor through the speaker
 					gui.UpdateElevatorPosition(floor)
-					doorTimer.Reset(3 * time.Second) // Reset the door timer
-					eObj.SetStateDoorOpen()          // Set state to DoorOpen
-					eObj.UpdateLights()              // Update alle elevator lights
-					chStateUpdate <- *eObj           // Broadcast states
+					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
+					eObj.SetStateDoorOpen()              // Set state to DoorOpen
+					eObj.UpdateLights()                  // Update alle elevator lights
+					chStateUpdate <- *eObj               // Broadcast states
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) {
 					// Stop elevator so it does not run out of bounds
 					eObj.Dir = elevio.MD_Stop
@@ -156,7 +154,7 @@ func FsmTest(
 					go sound.StartCafeteria()
 				} else {
 					eObj.Obs = false
-					go sound.StopSong()
+					sound.Pause()
 				}
 
 			case elevator.Moving:
@@ -173,23 +171,21 @@ func FsmTest(
 
 		case stop := <-chIoStop:
 			fmt.Printf("%+v\n", stop)
-			// Clear all og exit
 			for floor := 0; floor < config.NumFloors; floor++ {
-				//clearOrdersAtFloor(eObj, floor)
 				eObj.ClearOrderAtFloor(floor)
 			}
-			//eObj.SetDirectionStop()
 			eObj.Dir = elevio.MD_Stop
 			elevio.SetMotorDirection(eObj.Dir)
-			//fmt.Printf(eObj.String())
+			eObj.ClearAllOrders()
 			chStateUpdate <- *eObj // Send elevator states through channel
+			sound.NesteStasjon()
 			os.Exit(1)
 
 		case <-doorTimer.C:
 			switch eObj.State {
 			case elevator.DoorOpen:
 				if eObj.Obs {
-					doorTimer.Reset(3 * time.Second)
+					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
 				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
@@ -206,9 +202,6 @@ func FsmTest(
 				}
 				chStateUpdate <- *eObj
 			}
-			//case <-updateTimer.C:
-			//	chMsgToNetwork <- *eObj
-			//	updateTimer.Reset(500 * time.Millisecond)
 		}
 	}
 }

@@ -1,7 +1,9 @@
 package gui
 
 import (
+	"Project/config"
 	"Project/elevio"
+	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
@@ -22,7 +24,6 @@ var (
 	elevator          pixel.Sprite
 	elevatorPos       pixel.Vec
 	screenWidth       = 300.0
-	screenHeight      = 600.0
 	lightOn           bool
 	arrow             *imdraw.IMDraw
 	arrowMutex        sync.Mutex
@@ -34,6 +35,8 @@ func InitGUI() {
 }
 
 func run() {
+	screenHeight := float64(config.NumFloors) * 150
+	fmt.Printf("Screen Height: %f\n", screenHeight)
 
 	cfg := pixelgl.WindowConfig{
 		Title:  "Elevator Simulation",
@@ -94,14 +97,9 @@ func loadPicture(path string) (pixel.Picture, error) {
 	return pixel.PictureDataFromImage(img), nil
 }
 
-//	func UpdateElevatorPosition(floor int) {
-//		var elevatorOffset float64 = 70
-//		elevatorPos = pixel.V(screenWidth/2, (screenHeight/4)*float64(floor)+elevatorOffset)
-//	}
-//
-// Modify the UpdateElevatorPosition function to gradually move the elevator
 func UpdateElevatorPosition(newFloor int) {
-	targetPos := pixel.V(screenWidth/2, (screenHeight/4)*float64(newFloor)+70)
+	screenHeight := float64(config.NumFloors) * 150
+	targetPos := pixel.V(screenWidth/2, (screenHeight/float64(config.NumFloors))*float64(newFloor)+70)
 	steps := 100
 	duration := time.Millisecond * 5
 
@@ -127,6 +125,7 @@ func SetArrowDirection(direction elevio.MotorDirection) {
 }
 
 func drawLight() {
+	screenHeight := float64(config.NumFloors) * 150
 	imd := imdraw.New(nil)
 	lightRadius := 20.0
 	lightPosX := screenWidth - lightRadius - 10
@@ -134,7 +133,7 @@ func drawLight() {
 	if lightOn {
 		imd.Color = color.RGBA{R: 208, G: 49, B: 45, A: 255} // Red color with full opacity
 	} else {
-		imd.Color = color.RGBA{R: 170, G: 0, B: 0, A: 255} // Dark red color with full opacity
+		imd.Color = color.RGBA{R: 140, G: 0, B: 0, A: 255}
 	}
 	imd.Push(pixel.V(lightPosX, lightPosY))
 	//imd.Circle(lightRadius, 0)
@@ -143,6 +142,7 @@ func drawLight() {
 }
 
 func drawArrow(direction elevio.MotorDirection) {
+	screenHeight := float64(config.NumFloors) * 150
 	scalingFactor := 2.0
 	arrowSize := 20.0 * scalingFactor
 	arrowPosX := screenWidth - arrowSize - 10
@@ -161,7 +161,7 @@ func drawArrow(direction elevio.MotorDirection) {
 		arrow.Push(pixel.V(arrowPosX+arrowSize, arrowPosY+arrowSize))
 	} else {
 		arrow = nil
-		return // Add this line to return early when the direction is MD_Stop
+		return
 	}
-	arrow.Polygon(0) // Draw the arrow as a polygon
+	arrow.Polygon(0)
 }

@@ -17,6 +17,7 @@ var (
 	currentSong        beep.Streamer
 	ctrl               *beep.Ctrl
 	isPlaying          bool
+	started            = false
 )
 
 func initSpeaker(sampleRate beep.SampleRate) {
@@ -33,13 +34,23 @@ func AtFloor(floor int) {
 	var filePath string
 	switch floor {
 	case 0:
-		filePath = "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/f1.mp3"
+		filePath = "sound/SoundEffects/f1.mp3"
 	case 1:
-		filePath = "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/f2.mp3"
+		filePath = "sound/SoundEffects/f2.mp3"
 	case 2:
-		filePath = "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/f3.mp3"
+		filePath = "sound/SoundEffects/f3.mp3"
 	case 3:
-		filePath = "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/f4.mp3"
+		filePath = "sound/SoundEffects/f4.mp3"
+	case 4:
+		filePath = "sound/SoundEffects/f5.mp3"
+	case 5:
+		filePath = "sound/SoundEffects/f6.mp3"
+	case 6:
+		filePath = "sound/SoundEffects/f7.mp3"
+	case 7:
+		filePath = "sound/SoundEffects/f8.mp3"
+	case 8:
+		filePath = "sound/SoundEffects/f9.mp3"
 	default:
 		return
 	}
@@ -75,7 +86,7 @@ func IAmBack() {
 	iamBackCtx, iamBackCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer iamBackCancel()
 
-	filePath := "/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/Imback_elevator2.mp3"
+	filePath := "sound/SoundEffects/Imback_elevator2.mp3"
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Failed to open mp3: %v", err)
@@ -105,7 +116,12 @@ func IAmBack() {
 }
 
 func StartCafeteria() {
-	StartSong("/Users/thomas/GolandProjects/TTK4145-Heis-2/sound/SoundEffects/LEGO Star Wars II Music - Mos Eisley Cantina.mp3")
+	if !started {
+		StartSong("sound/SoundEffects/LEGO Star Wars II Music - Mos Eisley Cantina.mp3")
+		started = true
+	} else {
+		Pause()
+	}
 }
 
 func StartSong(filePath string) {
@@ -169,5 +185,38 @@ func Pause() {
 func Resume() {
 	if ctrl != nil {
 		ctrl.Paused = false
+	}
+}
+
+func NesteStasjon() {
+	nesteStasjonCtx, nesteStasjon := context.WithTimeout(context.Background(), 10*time.Second)
+	defer nesteStasjon()
+
+	filePath := "sound/SoundEffects/Helv.mp3"
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatalf("Failed to open mp3: %v", err)
+	}
+	defer file.Close()
+
+	streamer, format, err := mp3.Decode(file)
+	if err != nil {
+		log.Fatalf("Failed o decode MP3 file: %v ", err)
+	}
+	defer streamer.Close()
+
+	initSpeaker(format.SampleRate)
+
+	done := make(chan struct{})
+	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+		done <- struct{}{}
+	})))
+
+	select {
+	case <-done:
+	case <-nesteStasjonCtx.Done():
+		speaker.Lock()
+		speaker.Clear()
+		speaker.Unlock()
 	}
 }

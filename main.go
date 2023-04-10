@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Project/config"
 	"Project/elevio"
 	"Project/gui"
 	"Project/localElevator/boot"
@@ -9,8 +10,8 @@ import (
 	"Project/messageHandler"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"Project/sound"
 	"flag"
+	"fmt"
 )
 
 func main() {
@@ -18,10 +19,14 @@ func main() {
 	var port string
 	udpPeer := 6001
 	udpData := 6002
+	var numFloors int
 
 	flag.StringVar(&port, "port", "", "Port of this elevator")
 	flag.StringVar(&id, "id", "", "id of this elevator")
+	flag.IntVar(&numFloors, "floors", 4, "number of elevator floors")
 	flag.Parse()
+	config.NumFloors = numFloors // Update config
+	fmt.Printf("number of floors%f\n", config.NumFloors)
 
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 100)
@@ -41,8 +46,6 @@ func main() {
 	chAddButton := make(chan elevio.ButtonEvent, 100)
 	chRmButton := make(chan elevio.ButtonEvent, 100)
 
-	chAudio := make(chan sound.SoundEvent, 100)
-
 	// Goroutines for interfacing with I/O
 	go elevio.PollFloorSensor(chIoFloor)
 	go elevio.PollObstructionSwitch(chIoObstical)
@@ -50,7 +53,7 @@ func main() {
 	go elevio.PollButtons(chIoButtons)
 
 	// Boot elevator
-	eObj := boot.Elevator(id, port, chIoFloor)
+	eObj := boot.Elevator(id, port, chIoFloor, numFloors)
 	eObjCopy := eObj.Clone()
 	// Goroutine for networkMessaging
 	go peers.Transmitter(udpPeer, id, chPeerTxEnable)
@@ -67,7 +70,6 @@ func main() {
 		chNewState,
 		chRmButton,
 		chAddButton,
-		chAudio,
 	)
 
 	go messageHandler.Handel(
@@ -79,7 +81,6 @@ func main() {
 		chAddButton,
 		chRmButton,
 		chPeerUpdate,
-		chAudio,
 	)
 	gui.InitGUI()
 	select {}

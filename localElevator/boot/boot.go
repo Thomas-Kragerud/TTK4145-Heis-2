@@ -8,9 +8,10 @@ import (
 func Elevator(
 	pid,
 	port string,
-	chAtFloor <-chan int) elevator.Elevator {
+	chAtFloor <-chan int,
+	numFloors int) elevator.Elevator {
 	// Boot elevator
-	elevio.Init("localhost:"+port, 4)
+	elevio.Init("localhost:"+port, numFloors)
 	eObj := new(elevator.Elevator)
 	eObj.Init(pid)
 	//chMsgToNetwork <- *eObj

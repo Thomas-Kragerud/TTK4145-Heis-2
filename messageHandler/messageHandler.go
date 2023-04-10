@@ -20,7 +20,6 @@ func Handel(
 	chAddButtonToFsm chan<- elevio.ButtonEvent,
 	chRmButtonFromFsm chan<- elevio.ButtonEvent,
 	chPeerUpdate <-chan peers.PeerUpdate,
-	chAudio chan sound.SoundEvent,
 ) {
 
 	//thisElev := <-chFromFsm
