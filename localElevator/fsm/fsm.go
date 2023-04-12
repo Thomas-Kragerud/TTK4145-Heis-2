@@ -3,10 +3,8 @@ package fsm
 import (
 	"Project/config"
 	"Project/elevio"
-	"Project/gui"
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm_utils"
-	"Project/sound"
 	"fmt"
 	"os"
 	"time"
@@ -24,7 +22,6 @@ func FsmTest(
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
 	for {
-		gui.SetArrowDirection(eObj.Dir)
 		eObj.UpdateLights()
 		select {
 		case btnEvent := <-chAddButton:
@@ -33,7 +30,6 @@ func FsmTest(
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
-					gui.SetDoorOpenLight(true)
 					doorTimer.Reset(config.DoorOpenTime)
 					chStateUpdate <- *eObj
 
@@ -119,9 +115,6 @@ func FsmTest(
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
-					gui.SetDoorOpenLight(true)
-					go sound.AtFloor(floor) // Announce the floor through the speaker
-					gui.UpdateElevatorPosition(floor)
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
@@ -151,10 +144,8 @@ func FsmTest(
 				// Should the door not open and elevator not move?
 				if obstruction {
 					eObj.Obs = true
-					go sound.StartCafeteria()
 				} else {
 					eObj.Obs = false
-					sound.Pause()
 				}
 
 			case elevator.Moving:
@@ -178,7 +169,6 @@ func FsmTest(
 			elevio.SetMotorDirection(eObj.Dir)
 			eObj.ClearAllOrders()
 			chStateUpdate <- *eObj // Send elevator states through channel
-			sound.NesteStasjon()
 			os.Exit(1)
 
 		case <-doorTimer.C:
@@ -192,7 +182,6 @@ func FsmTest(
 				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 				elevio.SetDoorOpenLamp(false)
-				gui.SetDoorOpenLight(false)
 
 				if eObj.Dir == elevio.MD_Stop {
 					eObj.SetStateIdle()

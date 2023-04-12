@@ -117,7 +117,7 @@ func NewStatesFromAssigner(
 	e elevator.Elevator) {
 	for id, ord := range newStates {
 		if id == pid {
-			//fmt.Printf("New states from assigner: %+v", ord)
+			fmt.Printf("New states from assigner: %+v", ord)
 			for f := range ord {
 				for b := range ord[f] {
 					if ord[f][b] {

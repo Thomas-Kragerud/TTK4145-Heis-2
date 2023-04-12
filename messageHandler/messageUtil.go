@@ -5,6 +5,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"errors"
+	"fmt"
 )
 
 // reAssign
@@ -29,6 +30,7 @@ func reAssign(
 	}
 	input.HallRequests = hall
 	result := assigner.Assign(input)
+	fmt.Print(result)
 	hallBefore := elevatorMap[pid].Elevator.Orders
 	hallAfter := result[pid]
 	fromReAssigner := make([]assignValue, 0)
