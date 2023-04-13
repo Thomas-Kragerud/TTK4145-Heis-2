@@ -22,7 +22,6 @@ func Handel(
 	chPeerUpdate <-chan peers.PeerUpdate,
 ) {
 
-	//thisElev := <-chFromFsm
 	thisElev := elevator
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
@@ -33,6 +32,7 @@ func Handel(
 	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
 		for _, val := range fromReAssigner {
+			time.Sleep(config.PollRate)
 			if val.Type == Add {
 				chAddButtonToFsm <- val.BtnEvent
 			} else if val.Type == Remove {
@@ -221,15 +221,9 @@ func Handel(
 				if e.Elevator.Id == thisElev.Id {
 					log.Printf("Witnesed my own death")
 				}
-				//e.Alive = true
-				//elevatorMap[e.Elevator.Id] = e
 				fmt.Printf("Would be cool if %s resurected \n", p.New)
 				fmt.Printf(e.Elevator.String())
 				fmt.Println()
-				//chMsgToNetwork <- NetworkPackage{
-				//	Event:    Recover,
-				//	Elevator: e.Elevator,
-				//}
 			}
 		default:
 			continue

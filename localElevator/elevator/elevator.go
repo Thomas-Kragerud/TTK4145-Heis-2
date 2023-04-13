@@ -24,12 +24,13 @@ var _stateToString = map[Elevatorstate]string{
 }
 
 type Elevator struct {
-	Floor  int
-	Dir    elevio.MotorDirection
-	Orders [][]bool
-	State  Elevatorstate
-	Id     string
-	Obs    bool // Obstruction
+	Floor        int
+	Dir          elevio.MotorDirection
+	Orders       [][]bool
+	State        Elevatorstate
+	Id           string
+	Obs          bool // Obstruction
+	ReAssignStop bool
 	//OrderMutex sync.Mutex // Add a mutex to the Elevator struct
 }
 
@@ -46,6 +47,7 @@ func (e *Elevator) Init(Id string) {
 	e.State = Idle
 	e.Dir = elevio.MD_Stop
 	e.Obs = false
+	e.ReAssignStop = false
 }
 
 func (e *Elevator) Clone() Elevator {

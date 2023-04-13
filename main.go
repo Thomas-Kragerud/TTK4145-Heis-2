@@ -33,7 +33,7 @@ func main() {
 	config.NumFloors = numFloors // Update config
 
 	// Channels for networkMessaging
-	chIoButtons := make(chan elevio.ButtonEvent, 100)
+	chIoButtons := make(chan elevio.ButtonEvent, 1)
 	chMsgToNetwork := make(chan messageHandler.NetworkPackage, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
 	chMsgFromNetwork := make(chan messageHandler.NetworkPackage, 100)
 
@@ -47,8 +47,8 @@ func main() {
 	chIoFloor := make(chan int)
 	chIoObstical := make(chan bool)
 	chIoStop := make(chan bool)
-	chAddButton := make(chan elevio.ButtonEvent, 100)
-	chRmButton := make(chan elevio.ButtonEvent, 100)
+	chAddButton := make(chan elevio.ButtonEvent, 1)
+	chRmButton := make(chan elevio.ButtonEvent, 1)
 
 	// Goroutines for interfacing with I/O
 	go elevio.PollFloorSensor(chIoFloor)

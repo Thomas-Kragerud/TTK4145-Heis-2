@@ -6,6 +6,8 @@ var NumFloors = 4
 
 const NumButtons = 3
 
+const PollRate = 20 * time.Millisecond
+
 const DoorOpenTime = 3 * time.Second
 
 type HRAElevState struct {

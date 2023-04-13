@@ -8,6 +8,7 @@ import (
 	"Project/localElevator/fsm_utils"
 	"Project/sound"
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -26,6 +27,9 @@ func FsmTest(
 	for {
 		gui.SetArrowDirection(eObj.Dir)
 		eObj.UpdateLights()
+		//select {
+		//
+		//}
 		select {
 		case btnEvent := <-chAddButton:
 			switch eObj.State {
@@ -87,9 +91,7 @@ func FsmTest(
 					} else {
 						elevio.SetMotorDirection(elevio.MD_Down)
 					}
-					eObj.SetStateIdle()
-				} else {
-					eObj.SetStateMoving()
+					eObj.ReAssignStop = true // Set flag to reassign stop
 				}
 				break
 
@@ -106,13 +108,8 @@ func FsmTest(
 		case floor := <-chIoFloor:
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
-			switch eObj.State {
 
-			case elevator.Idle:
-				// Special case where elevator has no orders and would
-				// otherwise be stuck between to floors due to reAssigning
-				eObj.Dir = elevio.MD_Stop
-				elevio.SetMotorDirection(eObj.Dir)
+			switch eObj.State {
 
 			case elevator.Moving:
 				if fsm_utils.IsValidStop(eObj) {
@@ -126,9 +123,13 @@ func FsmTest(
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
 					chStateUpdate <- *eObj               // Broadcast states
-				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) {
-					// Stop elevator so it does not run out of bounds
-					eObj.Dir = elevio.MD_Stop
+				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) || (eObj.ReAssignStop) {
+					if eObj.ReAssignStop {
+						eObj.ReAssignStop = false
+						log.Printf("Stoppet på nærmeste nice floor\n")
+					}
+
+					eObj.Dir = elevio.MD_Stop                   // Stop elevator so it does not run out of bounds
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction to stop
 					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find next direction
 					elevio.SetMotorDirection(eObj.Dir)
@@ -139,9 +140,12 @@ func FsmTest(
 					} else {
 						eObj.SetStateMoving()
 					}
+					log.Printf("Ble redded fra å kjøre ut av bygget\n")
+					log.Printf("Elevator state: %v\n", eObj.String())
 				}
-				break
 			default:
+				log.Printf("Error: Elevator moving when it shoudnt, but received floor signal\n")
+				log.Printf("Elevator state: %v\n", eObj.String())
 				break
 			}
 
