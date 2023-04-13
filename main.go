@@ -10,8 +10,8 @@ import (
 	"Project/messageHandler"
 	"Project/network/bcast"
 	"Project/network/peers"
+	"Project/sound"
 	"flag"
-	"fmt"
 )
 
 func main() {
@@ -20,13 +20,17 @@ func main() {
 	udpPeer := 6001
 	udpData := 6002
 	var numFloors int
+	var guiOn bool
+	var soundOn bool
 
 	flag.StringVar(&port, "port", "", "Port of this elevator")
 	flag.StringVar(&id, "id", "", "id of this elevator")
 	flag.IntVar(&numFloors, "floors", 4, "number of elevator floors")
+	flag.BoolVar(&guiOn, "gui", false, "turn on gui")
+	flag.BoolVar(&soundOn, "sound", false, "turn on sound")
+
 	flag.Parse()
 	config.NumFloors = numFloors // Update config
-	fmt.Printf("number of floors%f\n", config.NumFloors)
 
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 100)
@@ -82,7 +86,8 @@ func main() {
 		chRmButton,
 		chPeerUpdate,
 	)
-	gui.InitGUI()
+	gui.InitGUI(guiOn)
+	sound.InitSound(soundOn)
 	select {}
 
 }

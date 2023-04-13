@@ -18,7 +18,12 @@ var (
 	ctrl               *beep.Ctrl
 	isPlaying          bool
 	started            = false
+	soundOn            bool
 )
+
+func InitSound(b bool) {
+	soundOn = b
+}
 
 func initSpeaker(sampleRate beep.SampleRate) {
 	if !speakerInitialized {
@@ -28,6 +33,14 @@ func initSpeaker(sampleRate beep.SampleRate) {
 }
 
 func AtFloor(floor int) {
+	if soundOn {
+		atFloor(floor)
+	} else {
+		return
+	}
+}
+
+func atFloor(floor int) {
 	atFloorCtx, atFloorCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer atFloorCancel()
 
@@ -83,6 +96,14 @@ func AtFloor(floor int) {
 }
 
 func IAmBack() {
+	if soundOn {
+		iAmBack()
+	} else {
+		return
+	}
+}
+
+func iAmBack() {
 	iamBackCtx, iamBackCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer iamBackCancel()
 
@@ -116,15 +137,23 @@ func IAmBack() {
 }
 
 func StartCafeteria() {
+	if soundOn {
+		startCafeteria()
+	} else {
+		return
+	}
+}
+
+func startCafeteria() {
 	if !started {
-		StartSong("sound/SoundEffects/LEGO Star Wars II Music - Mos Eisley Cantina.mp3")
+		startSong("sound/SoundEffects/LEGO Star Wars II Music - Mos Eisley Cantina.mp3")
 		started = true
 	} else {
 		Pause()
 	}
 }
 
-func StartSong(filePath string) {
+func startSong(filePath string) {
 	if songCancel != nil {
 		songCancel()
 	}
@@ -177,18 +206,26 @@ func StopSong() {
 }
 
 func Pause() {
-	if ctrl != nil {
+	if soundOn && ctrl != nil {
 		ctrl.Paused = true
 	}
 }
 
 func Resume() {
-	if ctrl != nil {
+	if soundOn && ctrl != nil {
 		ctrl.Paused = false
 	}
 }
 
 func NesteStasjon() {
+	if soundOn {
+		nesteStasjon()
+	} else {
+		return
+	}
+}
+
+func nesteStasjon() {
 	nesteStasjonCtx, nesteStasjon := context.WithTimeout(context.Background(), 10*time.Second)
 	defer nesteStasjon()
 

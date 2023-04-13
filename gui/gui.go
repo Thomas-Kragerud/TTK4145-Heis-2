@@ -3,7 +3,6 @@ package gui
 import (
 	"Project/config"
 	"Project/elevio"
-	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
@@ -23,21 +22,28 @@ var (
 	elevatorPic       pixel.Picture
 	elevator          pixel.Sprite
 	elevatorPos       pixel.Vec
-	screenWidth       = 300.0
+	screenWidth       float64
+	screenHeight      float64
 	lightOn           bool
 	arrow             *imdraw.IMDraw
 	arrowMutex        sync.Mutex
 	elevatorDirection elevio.MotorDirection
+	guiOn             bool
 )
 
-func InitGUI() {
-	pixelgl.Run(run)
+func InitGUI(true bool) {
+	screenHeight = float64(config.NumFloors) * 150
+	screenWidth = 300.0
+	if true {
+		guiOn = true
+		pixelgl.Run(run)
+	} else {
+		guiOn = false
+	}
+
 }
 
 func run() {
-	screenHeight := float64(config.NumFloors) * 150
-	fmt.Printf("Screen Height: %f\n", screenHeight)
-
 	cfg := pixelgl.WindowConfig{
 		Title:  "Elevator Simulation",
 		Bounds: pixel.R(0, 0, screenWidth, screenHeight),
@@ -98,18 +104,21 @@ func loadPicture(path string) (pixel.Picture, error) {
 }
 
 func UpdateElevatorPosition(newFloor int) {
-	screenHeight := float64(config.NumFloors) * 150
-	targetPos := pixel.V(screenWidth/2, (screenHeight/float64(config.NumFloors))*float64(newFloor)+70)
-	steps := 100
-	duration := time.Millisecond * 5
+	if guiOn {
+		targetPos := pixel.V(screenWidth/2, (screenHeight/float64(config.NumFloors))*float64(newFloor)+70)
+		steps := 100
+		duration := time.Millisecond * 5
 
-	// Calculate the difference between the target position and the current position
-	delta := targetPos.Sub(elevatorPos).Scaled(1 / float64(steps))
+		// Calculate the difference between the target position and the current position
+		delta := targetPos.Sub(elevatorPos).Scaled(1 / float64(steps))
 
-	// Gradually move the elevator to the target position
-	for i := 0; i < steps; i++ {
-		elevatorPos = elevatorPos.Add(delta)
-		time.Sleep(duration)
+		// Gradually move the elevator to the target position
+		for i := 0; i < steps; i++ {
+			elevatorPos = elevatorPos.Add(delta)
+			time.Sleep(duration)
+		}
+	} else {
+		return
 	}
 }
 
@@ -118,14 +127,17 @@ func SetDoorOpenLight(on bool) {
 }
 
 func SetArrowDirection(direction elevio.MotorDirection) {
-	arrowMutex.Lock()
-	drawArrow(direction)
-	elevatorDirection = direction
-	arrowMutex.Unlock()
+	if guiOn {
+		arrowMutex.Lock()
+		drawArrow(direction)
+		elevatorDirection = direction
+		arrowMutex.Unlock()
+	} else {
+		return
+	}
 }
 
 func drawLight() {
-	screenHeight := float64(config.NumFloors) * 150
 	imd := imdraw.New(nil)
 	lightRadius := 20.0
 	lightPosX := screenWidth - lightRadius - 10
@@ -142,7 +154,6 @@ func drawLight() {
 }
 
 func drawArrow(direction elevio.MotorDirection) {
-	screenHeight := float64(config.NumFloors) * 150
 	scalingFactor := 2.0
 	arrowSize := 20.0 * scalingFactor
 	arrowPosX := screenWidth - arrowSize - 10
