@@ -1,5 +1,12 @@
-Heis implementert med UDP, Peer2Peer og dynamic reasigner
 
+## Elevator System
+The elevator system is a distributed system that uses a peer-to-peer (P2P) network architecture to communicate between elevator nodes. Specifically, it utilizes the User Datagram Protocol (UDP) for broadcasting messages across the network. UDP is a connectionless protocol that allows for fast transmission of data packets, making it a suitable choice for applications that require low latency and real-time communication.
+
+In this system, each elevator node is responsible for managing its own state and making decisions based on that state. To ensure consistency across the system, each elevator node broadcasts its state information to all other nodes using UDP broadcasts. This approach allows all nodes to have the same information about the state of the entire system, which enables them to make informed decisions.
+
+The use of a P2P network architecture allows for a decentralized system that is fault-tolerant and can scale to accommodate additional nodes. It also reduces the risk of a single point of failure, which can be a significant advantage in large distributed systems.
+
+To mitigate version control issues, the system only sends information about itself, rather than the entire system. This means that each node only needs to be aware of the state of the other nodes, rather than the entire system. This approach reduces the amount of information that needs to be transmitted and helps to ensure consistency across the system.
 
 
 
