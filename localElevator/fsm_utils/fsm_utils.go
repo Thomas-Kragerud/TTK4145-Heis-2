@@ -86,7 +86,7 @@ func AnyCabOrdersAhead(e *elevator.Elevator) bool {
 func AnyOrderInDirection(e *elevator.Elevator, dir elevio.MotorDirection) bool {
 	switch dir {
 	case elevio.MD_Up:
-		for f := e.Floor; f < config.NumFloors; f++ {
+		for f := e.Floor+1; f < config.NumFloors; f++ {
 			for btn, _ := range e.Orders[f] {
 				if e.Orders[f][btn] {
 					return true

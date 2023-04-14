@@ -3,14 +3,12 @@ package main
 import (
 	"Project/config"
 	"Project/elevio"
-	"Project/gui"
 	"Project/localElevator/boot"
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm"
 	"Project/messageHandler"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"Project/sound"
 	"flag"
 )
 
@@ -86,8 +84,6 @@ func main() {
 		chRmButton,
 		chPeerUpdate,
 	)
-	gui.InitGUI(guiOn)
-	sound.InitSound(soundOn)
 	select {}
 
 }

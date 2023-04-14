@@ -29,6 +29,7 @@ func reAssign(
 	}
 	input.HallRequests = hall
 	result := assigner.Assign(input)
+	
 	hallBefore := elevatorMap[pid].Elevator.Orders
 	hallAfter := result[pid]
 	fromReAssigner := make([]assignValue, 0)

@@ -106,9 +106,28 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 func (e *Elevator) ClearOrderAtFloor(floor int) {
 	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
 	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
-	for btn, _ := range e.Orders[floor] {
-		e.Orders[floor][btn] = false
+	if e.Dir == elevio.MD_Up  || e.Floor == 0{
+		e.Orders[floor][0] = false
 	}
+	if e.Dir == elevio.MD_Down || e.Floor == config.NumFloors -1{
+		e.Orders[floor][1] = false
+	}
+	if e.Dir == elevio.MD_Stop{
+		e.Orders[floor][0] = false
+		e.Orders[floor][1] = false
+	}
+	e.Orders[floor][2] = false
+}
+
+
+func (e *Elevator) GetHallOrders() [][2]bool {
+	hall := make([][2]bool, config.NumFloors)
+	for f := 0; f < config.NumFloors; f++ {
+		for b := elevio.ButtonType(0); b < 1; b++ {
+			hall[f][b] = e.Orders[f][b]
+		}
+	}
+	return hall
 }
 
 func (e *Elevator) ClearOrderFromBtn(button elevio.ButtonEvent) {
