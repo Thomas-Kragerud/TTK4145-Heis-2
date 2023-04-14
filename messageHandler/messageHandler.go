@@ -67,12 +67,20 @@ func Handel(
 				e := elevatorMap[thisElev.Id]
 				hall = addHallBTN(hall, ioButton) // Add hall to this elevator list of hall
 				updateHallLights(hall)
+
 				msg := NetworkPackage{
 					NewHall,
 					e.Elevator,
 					ioButton,
 				}
 				chMsgToNetwork <- msg
+
+				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+				if err != nil {
+					log.Print("None fatal error: \n", err)
+				} else {
+					sendToFsm(fromReAssigner)
+				}
 			}
 
 		case newElevatorState := <-chFromFsm:
@@ -103,7 +111,7 @@ func Handel(
 		case msgFromNet := <-chMsgFromNetwork:
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
-					// ***** 
+					// *****
 					for f := 0; f < config.NumFloors; f++ {
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
@@ -148,14 +156,15 @@ func Handel(
 			}
 			switch msgFromNet.Event {
 			case NewHall:
-		
-				hall = addHallBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall)
-				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
-				if err != nil {
-					log.Print("None fatal error: \n", err)
-				} else {
-					sendToFsm(fromReAssigner)
+				if msgFromNet.Elevator.Id != thisElev.Id {
+					hall = addHallBTN(hall, msgFromNet.BtnEvent)
+					updateHallLights(hall)
+					fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+					if err != nil {
+						log.Print("None fatal error: \n", err)
+					} else {
+						sendToFsm(fromReAssigner)
+					}
 				}
 
 			case NewCab:
@@ -216,7 +225,7 @@ func Handel(
 					fmt.Printf("We lost %s\n", id)
 				}
 			}
-			
+
 			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
 				if e.Elevator.Id == thisElev.Id {
 					log.Printf("Witnesed my own death")
