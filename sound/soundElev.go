@@ -2,6 +2,7 @@ package sound
 
 import (
 	"context"
+	"fmt"
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
@@ -23,6 +24,7 @@ var (
 
 func InitSound(b bool) {
 	soundOn = b
+	fmt.Printf("Sound is %v\n", soundOn)
 }
 
 func initSpeaker(sampleRate beep.SampleRate) {

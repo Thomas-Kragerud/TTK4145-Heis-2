@@ -8,10 +8,12 @@ import (
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm"
 	"Project/messageHandler"
+	"Project/network/T_SR"
 	"Project/network/bcast"
 	"Project/network/peers"
 	"Project/sound"
 	"flag"
+	"fmt"
 )
 
 func main() {
@@ -28,14 +30,17 @@ func main() {
 	flag.IntVar(&numFloors, "floors", 4, "number of elevator floors")
 	flag.BoolVar(&guiOn, "gui", false, "turn on gui")
 	flag.BoolVar(&soundOn, "sound", false, "turn on sound")
-
 	flag.Parse()
 	config.NumFloors = numFloors // Update config
+	fmt.Printf("Sound on%v\n", soundOn)
 
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 1)
-	chMsgToNetwork := make(chan messageHandler.NetworkPackage, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
-	chMsgFromNetwork := make(chan messageHandler.NetworkPackage, 100)
+	chMsgToNetwork := make(chan T_SR.SROnNet, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
+	chMsgFromNetwork := make(chan T_SR.SROnNet, 100)
+
+	chMsgToSend := make(chan messageHandler.NetworkPackage, 100)
+	chMsgFromReciver := make(chan messageHandler.NetworkPackage, 100)
 
 	chPeerUpdate := make(chan peers.PeerUpdate)
 	chPeerTxEnable := make(chan bool)
@@ -49,6 +54,7 @@ func main() {
 	chIoStop := make(chan bool)
 	chAddButton := make(chan elevio.ButtonEvent, 1)
 	chRmButton := make(chan elevio.ButtonEvent, 1)
+	sound.InitSound(soundOn)
 
 	// Goroutines for interfacing with I/O
 	go elevio.PollFloorSensor(chIoFloor)
@@ -66,6 +72,15 @@ func main() {
 	go bcast.Transmitter(udpData, chMsgToNetwork)
 	go bcast.Receiver(udpData, chMsgFromNetwork)
 
+	go T_SR.Send(
+		chMsgToNetwork,
+		chMsgToSend,
+	)
+
+	go T_SR.Recive(
+		chMsgFromNetwork,
+		chMsgFromReciver, )
+
 	go fsm.FsmTest(
 		&eObj,
 		chIoFloor,
@@ -79,15 +94,14 @@ func main() {
 	go messageHandler.Handel(
 		&eObjCopy,
 		chIoButtons,
-		chMsgFromNetwork,
-		chMsgToNetwork,
+		chMsgFromReciver,
+		chMsgToSend,
 		chNewState,
 		chAddButton,
 		chRmButton,
 		chPeerUpdate,
 	)
 	gui.InitGUI(guiOn)
-	sound.InitSound(soundOn)
 	select {}
 
 }

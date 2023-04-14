@@ -40,6 +40,8 @@ go get -u github.com/faiface/pixel
 go get -u github.com/faiface/pixel/imdraw
 go get -u github.com/faiface/pixel/pixelgl
 golang.org/x/image/colornames
+go get github.com/oleiade/lane
+
 ```
 The above commands will download and install the necessary packages, allowing you to run the application without issues.
 

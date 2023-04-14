@@ -15,6 +15,7 @@ require (
 	github.com/go-gl/mathgl v1.0.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.0 // indirect
 	github.com/hajimehoshi/oto v0.7.1 // indirect
+	github.com/oleiade/lane v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8 // indirect
 	golang.org/x/image v0.7.0 // indirect
