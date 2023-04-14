@@ -3,7 +3,6 @@ package main
 import (
 	"Project/config"
 	"Project/elevio"
-	"Project/gui"
 	"Project/localElevator/boot"
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm"
@@ -11,7 +10,6 @@ import (
 	"Project/network/T_SR"
 	"Project/network/bcast"
 	"Project/network/peers"
-	"Project/sound"
 	"flag"
 	"fmt"
 )
@@ -54,7 +52,6 @@ func main() {
 	chIoStop := make(chan bool)
 	chAddButton := make(chan elevio.ButtonEvent, 1)
 	chRmButton := make(chan elevio.ButtonEvent, 1)
-	sound.InitSound(soundOn)
 
 	// Goroutines for interfacing with I/O
 	go elevio.PollFloorSensor(chIoFloor)
@@ -101,7 +98,6 @@ func main() {
 		chRmButton,
 		chPeerUpdate,
 	)
-	gui.InitGUI(guiOn)
 	select {}
 
 }

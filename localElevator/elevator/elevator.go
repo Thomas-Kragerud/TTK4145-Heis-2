@@ -124,6 +124,7 @@ func (e *Elevator) ClearAllOrders() {
 		e.ClearOrderAtFloor(f)
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, f, false)
+			fmt.Println("Clearing all lights")
 		}
 	}
 }

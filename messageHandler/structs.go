@@ -35,6 +35,7 @@ type NetworkPackage struct {
 	BtnEvent elevio.ButtonEvent
 }
 
+
 type ElevatorUpdate struct {
 	Elevator elevator.Elevator
 	Alive    bool

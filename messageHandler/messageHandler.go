@@ -5,7 +5,6 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"Project/network/peers"
-	"Project/sound"
 	"fmt"
 	"log"
 	"time"
@@ -39,7 +38,6 @@ func Handel(
 				chRmButtonFromFsm <- val.BtnEvent
 			}
 		}
-
 	}
 	chMsgToNetwork <- NetworkPackage{
 		Event:    UpdateElevState,
@@ -67,7 +65,6 @@ func Handel(
 				}
 			} else {
 				e := elevatorMap[thisElev.Id]
-				//e.Elevator.AddOrder(ioButton) // Only for bookkeeping
 				hall = addHallBTN(hall, ioButton) // Add hall to this elevator list of hall
 				updateHallLights(hall)
 				msg := NetworkPackage{
@@ -106,14 +103,15 @@ func Handel(
 		case msgFromNet := <-chMsgFromNetwork:
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
+					// ***** 
 					for f := 0; f < config.NumFloors; f++ {
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
+								time.Sleep(config.PollRate)
 								chAddButtonToFsm <- elevio.ButtonEvent{f, b}
 							}
 						}
 					}
-					go sound.IAmBack()
 					chMsgToNetwork <- NetworkPackage{
 						Event:    RecoveredElevator,
 						Elevator: msgFromNet.Elevator,
@@ -150,6 +148,7 @@ func Handel(
 			}
 			switch msgFromNet.Event {
 			case NewHall:
+		
 				hall = addHallBTN(hall, msgFromNet.BtnEvent)
 				updateHallLights(hall)
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
@@ -217,6 +216,7 @@ func Handel(
 					fmt.Printf("We lost %s\n", id)
 				}
 			}
+			
 			if e, ok := elevatorMap[p.New]; ok && !e.Alive {
 				if e.Elevator.Id == thisElev.Id {
 					log.Printf("Witnesed my own death")

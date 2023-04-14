@@ -25,7 +25,7 @@ func reAssign(
 		}
 	}
 	if !elevatorMap[pid].Alive {
-		return []assignValue{}, errors.New("This elevator was not alive when running, and calculations are false ")
+		return []assignValue{}, errors.New("This Recived was not alive when running, and calculations are false ")
 	}
 	input.HallRequests = hall
 	result := assigner.Assign(input)

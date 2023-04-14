@@ -2,7 +2,6 @@ package T_SR
 
 import (
 	"Project/messageHandler"
-	"fmt"
 	"github.com/oleiade/lane"
 )
 
@@ -32,10 +31,10 @@ func Recive(
 					ringBuffer.Shift()
 					ringBuffer.Append(msg.MsgId)
 				}
-				fmt.Printf("Recived message: %v\n", msg.Message)
+				//fmt.Printf("Recived message: %v\n", msg.Message)
 				chMsgFromReciver <- msg.Message
 			} else {
-				fmt.Println("Message already recieved")
+				//fmt.Println("Message already recieved")
 			}
 		}
 	}
