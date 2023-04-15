@@ -61,11 +61,12 @@ func FsmTest(
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
-				//chNewState <- *eObj
+				chNewState <- *eObj
 				break
 
 			case elevator.DoorOpen:
 				// Add order to queue if not on the correct floor
+				log.Print("New button when door open")
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(config.DoorOpenTime)
 					eObj.UpdateLights()
