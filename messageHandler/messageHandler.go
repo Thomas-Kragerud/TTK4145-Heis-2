@@ -93,22 +93,31 @@ func Handle(
 			}
 
 		case newElevatorState := <-chNewState:
+			// New information about the local elevator from the fsm
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
 
-			// Clears hall buttons
+			// Check if any halls where cleared
 			for f := 0; f < config.NumFloors; f++ {
-				for b := elevio.ButtonType(0); b < 2; b++ {
-					if hall[f][b] && newElevatorState.Floor == f {
-						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-						updateHallLights(hall)
-						msgToVCSend <- NetworkPackage{
-							Event:    ClareHall,
-							Elevator: newElevatorState,
-							BtnEvent: elevio.ButtonEvent{f, b},
-						}
+				if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp]) {
+					hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
+					updateHallLights(hall)
+					msgToVCSend <- NetworkPackage{
+						Event:    ClareHall,
+						Elevator: newElevatorState,
+						BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
 					}
+				}
+				if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown]) {
+					hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
+					updateHallLights(hall)
+					msgToVCSend <- NetworkPackage{
+						Event:    ClareHall,
+						Elevator: newElevatorState,
+						BtnEvent: elevio.ButtonEvent{f, elevio.MD_Down},
+					}
+					break
 				}
 			}
 			msgToVCSend <- NetworkPackage{
