@@ -107,7 +107,7 @@ func Fsm(
 			case elevator.Moving:
 				if fsmUtils.IsValidStop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
+					//eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
@@ -179,7 +179,7 @@ func Fsm(
 					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
-				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
+				//eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
 				eObj.Dir = fsmUtils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 				elevio.SetDoorOpenLamp(false)

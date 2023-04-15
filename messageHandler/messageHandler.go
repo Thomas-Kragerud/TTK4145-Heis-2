@@ -25,8 +25,8 @@ func Handle(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-	reRunRate := 2000 * time.Millisecond
-	reRunTimer := time.NewTimer(reRunRate)
+	//reRunRate := 2000 * time.Millisecond
+	//reRunTimer := time.NewTimer(reRunRate)
 
 	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
@@ -48,6 +48,7 @@ func Handle(
 	for {
 		select {
 		case ioButton := <-chIoButtons:
+			fmt.Print("Button pressed: ", ioButton, "\n")
 			if ioButton.Button == elevio.BT_Cab {
 				e := elevatorMap[thisElev.Id]
 				e.Elevator.AddOrder(ioButton)
@@ -85,14 +86,15 @@ func Handle(
 			}
 
 		case newElevatorState := <-chNewState:
+			fmt.Print("New state: ", newElevatorState, "\n")
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
 
-			// Clears hall buttons
+			// Check if there is any difference between newElevatorState and e.Orders and set all different values to false in e.orders
 			for f := 0; f < config.NumFloors; f++ {
-				for b := elevio.ButtonType(0); b < 2; b++ {
-					if hall[f][b] && newElevatorState.Floor == f {
+				for b := elevio.ButtonType(0); b < 3; b++ {
+					if newElevatorState.Orders[f][b] != e.Elevator.Orders[f][b] {
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 						updateHallLights(hall)
 						msgToVCSend <- NetworkPackage{
@@ -100,7 +102,6 @@ func Handle(
 							Elevator: newElevatorState,
 							BtnEvent: elevio.ButtonEvent{f, b},
 						}
-						break
 					}
 				}
 			}
@@ -110,6 +111,7 @@ func Handle(
 			}
 
 		case msgFromNet := <-msgFromVCReciver:
+			fmt.Print(msgFromNet.Event)
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
 					// *****
@@ -117,7 +119,7 @@ func Handle(
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
 								time.Sleep(config.PollRate)
-								msgToVCSend  <- elevio.ButtonEvent{f, b}
+								chAddButton  <- elevio.ButtonEvent{f, b}
 							}
 						}
 					}
@@ -147,8 +149,7 @@ func Handle(
 					Event:    Recover,
 					Elevator: e.Elevator,
 				}
-				break
-
+	
 			} else {
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
@@ -195,9 +196,9 @@ func Handle(
 				}
 
 
-			case ClareHall:
+			/* case ClareHall:
 				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall)
+				updateHallLights(hall) */
 
 			case RecoveredElevator:
 				e := elevatorMap[msgFromNet.Elevator.Id]
@@ -208,7 +209,7 @@ func Handle(
 
 			}
 
-		case <-reRunTimer.C:
+		/* case <-reRunTimer.C:
 			reRunTimer.Reset(reRunRate)
 			fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 			if err != nil {
@@ -216,7 +217,7 @@ func Handle(
 			} else {
 				fmt.Print("Got info from rerun timer sending to fsm: ", fromReAssigner, "\n")
 				sendToFsm(fromReAssigner)
-			}
+			} */
 
 		case p := <-chPeerUpdate:
 			for _, id := range p.Lost {
