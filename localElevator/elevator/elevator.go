@@ -210,9 +210,14 @@ func (e *Elevator) ToHallReq() [][2]bool {
 
 func (e *Elevator) GetHallOrders() [][2]bool {
 	hallReq := make([][2]bool, config.NumFloors)
-	for i:=0; i<config.NumFloors; i++ {
-		hallReq[i][0] = e.Orders[i][0]
-		hallReq[i][1] = e.Orders[i][1]
+	for f:=0; f<config.NumFloors; f++ {
+		if f < len(e.Orders) && len(e.Orders[f]) > 2 {
+			hallReq[f][0] = e.Orders[f][0]
+			hallReq[f][1] = e.Orders[f][1]
+		} else {
+			hallReq[f][0] = false
+			hallReq[f][1] = false
+		}
 	}
 	return hallReq
 }

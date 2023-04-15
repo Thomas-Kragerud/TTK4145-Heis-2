@@ -22,7 +22,7 @@ func FsmTest(
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
-	printFSMStates := true
+	printFSMStates := false
 	for {
 		eObj.UpdateLights()
 		//select {
@@ -83,6 +83,7 @@ func FsmTest(
 			switch eObj.State {
 			case elevator.Idle:
 				eObj.UpdateLights()
+				chNewState <- *eObj
 				break
 
 			case elevator.Moving:
@@ -101,6 +102,7 @@ func FsmTest(
 					}
 					eObj.ReAssignStop = true // Set flag to reassign stop
 				}
+				chNewState <- *eObj
 				break
 
 			case elevator.DoorOpen:
@@ -110,6 +112,7 @@ func FsmTest(
 					eObj.ClearOrderFromBtn(remove)
 					eObj.UpdateLights()
 				}
+				chNewState <- *eObj
 				break
 			}
 
@@ -212,6 +215,8 @@ func FsmTest(
 						eObj.UpdateLights()
 						elevio.SetMotorDirection(eObj.Dir)
 						log.Printf("Move in same direction")
+						chNewState <- *eObj
+						break
 					
 					case -oldDir:
 						// Oposit direction 
@@ -221,11 +226,14 @@ func FsmTest(
 						eObj.UpdateLights()
 						elevio.SetMotorDirection(eObj.Dir)
 						log.Printf("Move in oposit direction")
+						chNewState <- *eObj
+						break
 					
 					case elevio.MD_Stop:
 						eObj.Dir = elevio.MD_Stop //
 						eObj.ClearOrderAtFloor(eObj.Floor) // Clear hall in oposit direction
-						doorTimer.Reset(config.DoorOpenTime) // Reset timer 						
+						doorTimer.Reset(config.DoorOpenTime) // Reset timer 		
+						break				
 					}
 				
 				} else {
@@ -242,9 +250,12 @@ func FsmTest(
 						elevio.SetMotorDirection(eObj.Dir)
 						eObj.UpdateLights()
 					}
+		
 				}
-				chNewState <- *eObj
+				
 			}
 		}
+		log.Printf("FSM orders%v\n", eObj.Orders)
+		
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"errors"
+	"log"
 )
 
 // reAssign
@@ -28,9 +29,12 @@ func reAssign(
 		return []assignValue{}, errors.New("This Recived was not alive when running, and calculations are false ")
 	}
 	input.HallRequests = hall
+	log.Printf("Global hall %v\n", hall)
 	result := assigner.Assign(input)
 	hallBefore := elevatorMap[pid].Elevator.Orders
 	hallAfter := result[pid]
+	log.Printf("hallBefore %v\n", hallBefore)
+	log.Printf("hallAfter %v\n", hallAfter)
 	fromReAssigner := make([]assignValue, 0)
 	for f := 0; f < config.NumFloors; f++ {
 		for b := elevio.ButtonType(0); b < 2; b++ {

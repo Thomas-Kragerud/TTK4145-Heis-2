@@ -6,6 +6,7 @@ go 1.20
 //replace Network-go => ./Network-go
 
 require (
+	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203 // indirect
 	github.com/faiface/beep v1.1.0 // indirect
 	github.com/faiface/glhf v0.0.0-20211013000516-57b20770c369 // indirect
 	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 // indirect
@@ -20,5 +21,5 @@ require (
 	golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8 // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/mobile v0.0.0-20190415191353-3e0bab5405d6 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 )

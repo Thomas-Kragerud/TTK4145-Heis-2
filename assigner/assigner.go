@@ -37,7 +37,10 @@ func Assign(inData config.HRAInput) map[string][][3]bool {
 		ret, err = exec.Command(
 			"costfunc/hall_request_assigner",
 			"-i",
-			string(jsonBytes)).CombinedOutput()
+			string(jsonBytes),
+			"-clearRequestType",
+			"inDirn",
+			).CombinedOutput()
 	}
 
 	output := new(map[string][][3]bool)
