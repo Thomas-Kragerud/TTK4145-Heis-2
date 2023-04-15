@@ -33,17 +33,9 @@ func Handle(
 		for _, val := range fromReAssigner {
 			time.Sleep(config.PollRate)
 			if val.Type == Add {
-				fmt.Print("Sent add button to fsm", val.BtnEvent, "\n")
 				chAddButton <- val.BtnEvent
 			} else if val.Type == Remove{
-				fmt.Print("Sent remove button to fsm", val.BtnEvent, "\n")
-				/* fmt.Print(val.BtnEvent, "\n")
-				if thisElev.Dir == 1 && val.BtnEvent.Button == 0{
-					chRmButton <- val.BtnEvent
-				}
-				if thisElev.Dir == -1 && val.BtnEvent.Button == 1{
-					chRmButton <- val.BtnEvent
-				} */
+				chRmButton <- val.BtnEvent
 			}
 		}
 	}
@@ -196,17 +188,24 @@ func Handle(
 				newElevatorState := msgFromNet.Elevator
 				// Clears hall buttons if there are any hall btns to clare (redundancy)
 				for f := 0; f < config.NumFloors; f++ {
-					for b := elevio.ButtonType(0); b < 2; b++ {
-						if hall[f][b] && newElevatorState.Floor == f {
-							hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-							updateHallLights(hall)
-							msgToVCSend<- NetworkPackage{
-								Event:    ClareHall,
-								Elevator: newElevatorState,
-								BtnEvent: elevio.ButtonEvent{f, b},
-							}
-							break
+					if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp] ) {
+						hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
+						updateHallLights(hall)
+						msgToVCSend <- NetworkPackage{
+							Event:    ClareHall,
+							Elevator: newElevatorState,
+							BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
 						}
+					}
+					if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] ) {
+						hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
+						updateHallLights(hall)
+						msgToVCSend <- NetworkPackage{
+							Event:    ClareHall,
+							Elevator: newElevatorState,
+							BtnEvent: elevio.ButtonEvent{f, elevio.MD_Down},
+						}
+						break
 					}
 				}
 

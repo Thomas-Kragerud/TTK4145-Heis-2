@@ -31,7 +31,7 @@ func Fsm(
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
-					doorTimer.Reset(config.DoorOpenTime)
+					/* doorTimer.Reset(config.DoorOpenTime) */
 					chNewState <- *eObj
 
 				} else {
