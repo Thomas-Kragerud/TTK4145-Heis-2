@@ -186,3 +186,12 @@ func (e *Elevator) ToHallReq() [][2]bool {
 	fmt.Printf("HallReq: %v\n", hallReq)
 	return hallReq
 }
+
+func (e *Elevator) GetHallOrders() [][2]bool {
+	hallReq := make([][2]bool, config.NumFloors)
+	for i:=0; i<config.NumFloors; i++ {
+		hallReq[i][0] = e.Orders[i][0]
+		hallReq[i][1] = e.Orders[i][1]
+	}
+	return hallReq
+}

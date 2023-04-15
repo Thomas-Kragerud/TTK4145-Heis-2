@@ -16,7 +16,7 @@ func FsmTest(
 	chIoFloor <-chan int,
 	chIoObstical <-chan bool,
 	chIoStop <-chan bool,
-	chStateUpdate chan<- elevator.Elevator,
+	chNewState chan<- elevator.Elevator,
 	chRmButton <-chan elevio.ButtonEvent,
 	chAddButton <-chan elevio.ButtonEvent,
 ) {
@@ -35,7 +35,7 @@ func FsmTest(
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
-					chStateUpdate <- *eObj
+					chNewState <- *eObj
 
 				} else {
 					eObj.AddOrder(btnEvent) // Add order to orders
@@ -43,7 +43,7 @@ func FsmTest(
 					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction
 					eObj.SetStateMoving()
-					chStateUpdate <- *eObj
+					chNewState <- *eObj
 
 				}
 				break
@@ -51,7 +51,7 @@ func FsmTest(
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
-				//chStateUpdate <- *eObj
+				//chNewState <- *eObj
 				break
 
 			case elevator.DoorOpen:
@@ -63,7 +63,7 @@ func FsmTest(
 				} else {
 					eObj.AddOrder(btnEvent)
 				}
-				chStateUpdate <- *eObj
+				chNewState <- *eObj
 				break
 			}
 
@@ -115,7 +115,7 @@ func FsmTest(
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
-					chStateUpdate <- *eObj               // Broadcast states
+					chNewState <- *eObj               // Broadcast states
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) || (eObj.ReAssignStop) {
 					if eObj.ReAssignStop {
 						eObj.ReAssignStop = false
@@ -129,7 +129,7 @@ func FsmTest(
 
 					if eObj.Dir == elevio.MD_Stop {
 						eObj.SetStateIdle()
-						chStateUpdate <- *eObj
+						chNewState <- *eObj
 					} else {
 						eObj.SetStateMoving()
 					}
@@ -162,7 +162,7 @@ func FsmTest(
 					eObj.Obs = false
 				}
 			}
-			chStateUpdate <- *eObj // Send elevator states through channel
+			chNewState <- *eObj // Send elevator states through channel
 
 		case stop := <-chIoStop:
 			fmt.Printf("%+v\n", stop)
@@ -172,7 +172,7 @@ func FsmTest(
 			eObj.Dir = elevio.MD_Stop
 			elevio.SetMotorDirection(eObj.Dir)
 			eObj.ClearAllOrders()
-			chStateUpdate <- *eObj // Send elevator states through channel
+			chNewState <- *eObj // Send elevator states through channel
 			os.Exit(1)
 
 		case <-doorTimer.C:
@@ -189,11 +189,11 @@ func FsmTest(
 
 				if eObj.Dir == elevio.MD_Stop {
 					eObj.SetStateIdle()
-					chStateUpdate <- *eObj
+					chNewState <- *eObj
 				} else {
 					eObj.SetStateMoving()
 				}
-				chStateUpdate <- *eObj
+				chNewState <- *eObj
 			}
 		}
 	}
