@@ -89,8 +89,6 @@ func (e *Elevator) String() string {
 }
 
 // UpdateLights - updates all lights except the hall lights
-//
-//	which are set in the messageHandler.go event loop
 func (e *Elevator) UpdateLights() {
 	elevio.SetFloorIndicator(e.Floor)
 	for floor := range e.Orders {
@@ -123,16 +121,12 @@ func (e *Elevator) ClearOrderAtFloorInDirection(floor int) {
 
 // ClearOrderAtFloor clears all orders at the specified floor in the elevator's order matrix.
 func (e *Elevator) ClearOrderAtFloor(floor int) {
-	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
-	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
 	for btn, _ := range e.Orders[floor] {
 		e.Orders[floor][btn] = false
 	}
 }
 
 func (e *Elevator) ClearOrderFromBtn(button elevio.ButtonEvent) {
-	//e.OrderMutex.Lock()
-	//defer e.OrderMutex.Unlock()
 	e.Orders[button.Floor][button.Button] = false
 }
 
@@ -169,13 +163,6 @@ func (e *Elevator) OrderIsEmptyExeptAtFloor() bool {
 	return true
 }
 
-// ** Trenger jeg disse funksjone fra et kodekvali perspektiv?? **
-
-// Delete when deleting old fsm
-func (e *Elevator) SetDirectionStop() {
-	e.Dir = elevio.MD_Stop
-}
-
 func (e *Elevator) SetFloor(floor int) {
 	e.Floor = floor
 }
@@ -194,9 +181,6 @@ func (e *Elevator) SetStateMoving() {
 
 func (e *Elevator) ToHRA() config.HRAElevState {
 	var cabReq []bool
-	//for _, btn := range e.Orders {
-	//	cabReq = append(cabReq, btn[2])
-	//}
 	for f := 0; f < config.NumFloors; f++ {
 		if f < len(e.Orders) && len(e.Orders[f]) > 2 {
 			cabReq = append(cabReq, e.Orders[f][2])

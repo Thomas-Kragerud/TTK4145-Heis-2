@@ -23,7 +23,7 @@ func Handel(
 
 	thisElev := elevator
 	elevatorMap := make(map[string]ElevatorUpdate)
-	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
+	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true}
 	hall := make([][2]bool, config.NumFloors)
 	reRunRate := 2000 * time.Millisecond
 	reRunTimer := time.NewTimer(10 * time.Second)
@@ -84,25 +84,12 @@ func Handel(
 			}
 
 		case newElevatorState := <-chFromFsm:
+			// New information about the local elevator from the fsm
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
 
-			// Clears hall buttons
-			//for f := 0; f < config.NumFloors; f++ {
-			//	for b := elevio.ButtonType(0); b < 2; b++ {
-			//		if hall[f][b] && newElevatorState.Floor == f {
-			//			hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-			//			updateHallLights(hall)
-			//			chMsgToNetwork <- NetworkPackage{
-			//				Event:    ClareHall,
-			//				Elevator: newElevatorState,
-			//				BtnEvent: elevio.ButtonEvent{f, b},
-			//			}
-			//			break
-			//		}
-			//	}
-			//}
+			// Check if any halls where cleared
 			for f := 0; f < config.NumFloors; f++ {
 				if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp] && !newElevatorState.AnyCabOrdersAhead()) {
 					hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
@@ -149,20 +136,19 @@ func Handel(
 				}
 			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
 				// Have not seen this elevator before
-				newElevator := ElevatorUpdate{msgFromNet.Elevator, true, 0}
+				newElevator := ElevatorUpdate{msgFromNet.Elevator, true}
 				elevatorMap[msgFromNet.Elevator.Id] = newElevator
-				this := elevatorMap[thisElev.Id] // Brodcast to net so the new elevator see the first elevator
+				this := elevatorMap[thisElev.Id] // Broadcast to net so the new elevator see the first elevator
 				chMsgToNetwork <- NetworkPackage{
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
 			} else if e, ok := elevatorMap[msgFromNet.Elevator.Id]; ok && !e.Alive {
-				// Her forsøker jeg å revive heisen når den først er registrert
-				elevatorMap[e.Elevator.Id] = e
-				e.Alive = true
-				elevatorMap[e.Elevator.Id] = e
-				fmt.Printf("Gammel heis sett på nett, sender states: %s\n", e.Elevator.Id)
-
+				// Recover dead elevator that is now back online
+				elevatorMap[e.Elevator.Id] = e // Extract old elevator
+				e.Alive = true                 // Set alive
+				elevatorMap[e.Elevator.Id] = e // Update elevator map
+				// Broadcast to net so elevator can retrieve its old state
 				chMsgToNetwork <- NetworkPackage{
 					Event:    Recover,
 					Elevator: e.Elevator,
@@ -170,9 +156,9 @@ func Handel(
 				break
 
 			} else {
+				// Update elevator state
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
-				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
 			}
 			switch msgFromNet.Event {
@@ -229,7 +215,6 @@ func Handel(
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
 				e.Alive = true
-				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
 
 			}
