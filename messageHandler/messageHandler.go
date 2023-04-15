@@ -85,15 +85,26 @@ func Handle(
 			}
 
 		case newElevatorState := <-chNewState:
-			// New information about the local elevator from the fsm
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
 
-			// Check if any halls where cleared
-			
-		
-			msgToVCSend <- NetworkPackage{
+			// Clears hall buttons
+			for f := 0; f < config.NumFloors; f++ {
+				for b := elevio.ButtonType(0); b < 2; b++ {
+					if hall[f][b] && newElevatorState.Floor == f {
+						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
+						updateHallLights(hall)
+						msgToVCSend <- NetworkPackage{
+							Event:    ClareHall,
+							Elevator: newElevatorState,
+							BtnEvent: elevio.ButtonEvent{f, b},
+						}
+						break
+					}
+				}
+			}
+			msgToVCSend  <- NetworkPackage{
 				Event:    UpdateElevState,
 				Elevator: e.Elevator,
 			}
@@ -106,11 +117,11 @@ func Handle(
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
 								time.Sleep(config.PollRate)
-								chAddButton <- elevio.ButtonEvent{f, b}
+								msgToVCSend  <- elevio.ButtonEvent{f, b}
 							}
 						}
 					}
-					msgToVCSend <- NetworkPackage{
+					msgToVCSend  <- NetworkPackage{
 						Event:    RecoveredElevator,
 						Elevator: msgFromNet.Elevator,
 					}
@@ -121,7 +132,7 @@ func Handle(
 				newElevator := ElevatorUpdate{msgFromNet.Elevator, true, 0}
 				elevatorMap[msgFromNet.Elevator.Id] = newElevator
 				this := elevatorMap[thisElev.Id] // Brodcast to net so the new elevator see the first elevator
-				msgToVCSend<- NetworkPackage{
+				msgToVCSend  <- NetworkPackage{
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
@@ -132,7 +143,7 @@ func Handle(
 				elevatorMap[e.Elevator.Id] = e
 				fmt.Printf("Gammel heis sett på nett, sender states: %s\n", e.Elevator.Id)
 
-				msgToVCSend <- NetworkPackage{
+				msgToVCSend  <- NetworkPackage{
 					Event:    Recover,
 					Elevator: e.Elevator,
 				}
@@ -169,10 +180,16 @@ func Handle(
 				newElevatorState := msgFromNet.Elevator
 				// Clears hall buttons if there are any hall btns to clare (redundancy)
 				for f := 0; f < config.NumFloors; f++ {
-					for b := elevio.ButtonType(0); b < 3; b++ {
-						if newElevatorState.Orders[f][b] {
+					for b := elevio.ButtonType(0); b < 2; b++ {
+						if hall[f][b] && newElevatorState.Floor == f {
 							hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 							updateHallLights(hall)
+							msgToVCSend  <- NetworkPackage{
+								Event:    ClareHall,
+								Elevator: newElevatorState,
+								BtnEvent: elevio.ButtonEvent{f, b},
+							}
+							break
 						}
 					}
 				}
