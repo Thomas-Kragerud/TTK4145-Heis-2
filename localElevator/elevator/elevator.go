@@ -106,9 +106,10 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 func (e *Elevator) ClearOrderAtFloor(floor int) {
 	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
 	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
-	for btn, _ := range e.Orders[floor] {
+	/* for btn, _ := range e.Orders[floor] {
 		e.Orders[floor][btn] = false
-	}
+	} */
+	
 }
 
 func (e *Elevator) ClearOrderFromBtn(button elevio.ButtonEvent) {
@@ -124,7 +125,7 @@ func (e *Elevator) ClearAllOrders() {
 		e.ClearOrderAtFloor(f)
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, f, false)
-			fmt.Println("Clearing all lights")
+			//fmt.Println("Clearing all lights")
 		}
 	}
 }

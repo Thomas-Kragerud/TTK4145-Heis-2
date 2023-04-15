@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-func Handel(
+func Handle(
 	elevator *elevator.Elevator,
 	chIoButtons <-chan elevio.ButtonEvent,
-	chMsgFromNetwork <-chan NetworkPackage,
-	chMsgToNetwork chan<- NetworkPackage,
-	chFromFsm <-chan elevator.Elevator,
-	chAddButtonToFsm chan<- elevio.ButtonEvent,
-	chRmButtonFromFsm chan<- elevio.ButtonEvent,
+	msgFromVCReciver <-chan NetworkPackage,
+	msgToVCSend chan<- NetworkPackage,
+	chNewState <-chan elevator.Elevator,
+	chAddButton chan<- elevio.ButtonEvent,
+	chRmButton chan<- elevio.ButtonEvent,
 	chPeerUpdate <-chan peers.PeerUpdate,
 ) {
 
@@ -25,21 +25,30 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-	reRunRate := 2000 * time.Millisecond
-	reRunTimer := time.NewTimer(reRunRate)
+	//reRunRate := 2000 * time.Millisecond
+	//reRunTimer := time.NewTimer(reRunRate)
 
 	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
 		for _, val := range fromReAssigner {
 			time.Sleep(config.PollRate)
 			if val.Type == Add {
-				chAddButtonToFsm <- val.BtnEvent
-			} else if val.Type == Remove {
-				chRmButtonFromFsm <- val.BtnEvent
+				fmt.Print("Sent add button to fsm", val.BtnEvent, "\n")
+				chAddButton <- val.BtnEvent
+			} else if val.Type == Remove{
+				fmt.Print("Sent remove button to fsm", val.BtnEvent, "\n")
+				/* fmt.Print(val.BtnEvent, "\n")
+				if thisElev.Dir == 1 && val.BtnEvent.Button == 0{
+					chRmButton <- val.BtnEvent
+				}
+				if thisElev.Dir == -1 && val.BtnEvent.Button == 1{
+					chRmButton <- val.BtnEvent
+				} */
 			}
 		}
 	}
-	chMsgToNetwork <- NetworkPackage{
+
+	msgToVCSend <- NetworkPackage{
 		Event:    UpdateElevState,
 		Elevator: *thisElev,
 	}
@@ -51,14 +60,14 @@ func Handel(
 				e := elevatorMap[thisElev.Id]
 				e.Elevator.AddOrder(ioButton)
 				elevatorMap[thisElev.Id] = e
-				chAddButtonToFsm <- ioButton
+				chAddButton <- ioButton
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 				if err != nil {
 					log.Print("None fatal error: \n", err)
 				} else {
 					sendToFsm(fromReAssigner)
 				}
-				chMsgToNetwork <- NetworkPackage{
+				msgToVCSend <- NetworkPackage{
 					NewCab,
 					e.Elevator,
 					ioButton,
@@ -73,7 +82,7 @@ func Handel(
 					e.Elevator,
 					ioButton,
 				}
-				chMsgToNetwork <- msg
+				msgToVCSend <- msg
 
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 				if err != nil {
@@ -83,7 +92,7 @@ func Handel(
 				}
 			}
 
-		case newElevatorState := <-chFromFsm:
+		case newElevatorState := <-chNewState:
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
@@ -94,21 +103,20 @@ func Handel(
 					if hall[f][b] && newElevatorState.Floor == f {
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 						updateHallLights(hall)
-						chMsgToNetwork <- NetworkPackage{
+						msgToVCSend <- NetworkPackage{
 							Event:    ClareHall,
 							Elevator: newElevatorState,
 							BtnEvent: elevio.ButtonEvent{f, b},
 						}
-						break
 					}
 				}
 			}
-			chMsgToNetwork <- NetworkPackage{
+			msgToVCSend <- NetworkPackage{
 				Event:    UpdateElevState,
 				Elevator: e.Elevator,
 			}
 
-		case msgFromNet := <-chMsgFromNetwork:
+		case msgFromNet := <-msgFromVCReciver:
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
 					// *****
@@ -116,11 +124,11 @@ func Handel(
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
 								time.Sleep(config.PollRate)
-								chAddButtonToFsm <- elevio.ButtonEvent{f, b}
+								chAddButton <- elevio.ButtonEvent{f, b}
 							}
 						}
 					}
-					chMsgToNetwork <- NetworkPackage{
+					msgToVCSend <- NetworkPackage{
 						Event:    RecoveredElevator,
 						Elevator: msgFromNet.Elevator,
 					}
@@ -131,7 +139,7 @@ func Handel(
 				newElevator := ElevatorUpdate{msgFromNet.Elevator, true, 0}
 				elevatorMap[msgFromNet.Elevator.Id] = newElevator
 				this := elevatorMap[thisElev.Id] // Brodcast to net so the new elevator see the first elevator
-				chMsgToNetwork <- NetworkPackage{
+				msgToVCSend<- NetworkPackage{
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
@@ -142,7 +150,7 @@ func Handel(
 				elevatorMap[e.Elevator.Id] = e
 				fmt.Printf("Gammel heis sett på nett, sender states: %s\n", e.Elevator.Id)
 
-				chMsgToNetwork <- NetworkPackage{
+				msgToVCSend <- NetworkPackage{
 					Event:    Recover,
 					Elevator: e.Elevator,
 				}
@@ -183,7 +191,7 @@ func Handel(
 						if hall[f][b] && newElevatorState.Floor == f {
 							hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 							updateHallLights(hall)
-							chMsgToNetwork <- NetworkPackage{
+							msgToVCSend<- NetworkPackage{
 								Event:    ClareHall,
 								Elevator: newElevatorState,
 								BtnEvent: elevio.ButtonEvent{f, b},
@@ -206,14 +214,15 @@ func Handel(
 
 			}
 
-		case <-reRunTimer.C:
+		/* case <-reRunTimer.C:
 			reRunTimer.Reset(reRunRate)
 			fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 			if err != nil {
 				log.Print("None fatal error: \n", err)
 			} else {
+				fmt.Print("Got info from rerun timer sending to fsm: ", fromReAssigner, "\n")
 				sendToFsm(fromReAssigner)
-			}
+			} */
 
 		case p := <-chPeerUpdate:
 			for _, id := range p.Lost {
