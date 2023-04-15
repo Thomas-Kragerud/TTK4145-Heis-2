@@ -38,7 +38,7 @@ func Fsm(
 					eObj.AddOrder(btnEvent) // Add order to orders
 					eObj.UpdateLights()
 					eObj.Dir = fsmUtils.GetNextDirection(eObj) // Find direction
-					elevio.SetMotorDirection(eObj.Dir)          // Set direction
+					elevio.SetMotorDirection(eObj.Dir)         // Set direction
 					eObj.SetStateMoving()
 					chNewState <- *eObj
 
@@ -112,15 +112,15 @@ func Fsm(
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
-					chNewState <- *eObj               // Broadcast states
+					chNewState <- *eObj                  // Broadcast states
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) || (eObj.ReAssignStop) {
 					if eObj.ReAssignStop {
 						eObj.ReAssignStop = false
 						log.Printf("Stoppet på nærmeste nice floor\n")
 					}
 
-					eObj.Dir = elevio.MD_Stop                   // Stop elevator so it does not run out of bounds
-					elevio.SetMotorDirection(eObj.Dir)          // Set direction to stop
+					eObj.Dir = elevio.MD_Stop                  // Stop elevator so it does not run out of bounds
+					elevio.SetMotorDirection(eObj.Dir)         // Set direction to stop
 					eObj.Dir = fsmUtils.GetNextDirection(eObj) // Find next direction
 					elevio.SetMotorDirection(eObj.Dir)
 
