@@ -25,8 +25,8 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-//	reRunRate := 2000 * time.Millisecond
-//	reRunTimer := time.NewTimer(reRunRate)
+	reRunRate := 2000 * time.Millisecond
+	reRunTimer := time.NewTimer(reRunRate)
 	LocalHall := make([][2]bool, config.NumFloors)
 	for i:=0; i<config.NumFloors; i++ {
 		LocalHall[i][0] = false
@@ -99,9 +99,7 @@ func Handel(
 			for f := 0; f < config.NumFloors; f++ {
 				for b := elevio.ButtonType(0); b < 2; b++ {
 					if LocalHall[f][b] && !NewLocalHall[f][b]{
-						fmt.Print("Cleared order\n")
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-						updateHallLights(hall)
 						chMsgToNetwork <- NetworkPackage{
 							Event:    ClareHall,
 							Elevator: newElevatorState,
@@ -119,6 +117,7 @@ func Handel(
 
 		case msgFromNet := <-chMsgFromNetwork:
 			if printHandlerStates {fmt.Print("Message Handler: From Network \n")}
+			// Denne sjekker om det er en recover message fra nettet.
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
 					// *****
@@ -136,6 +135,7 @@ func Handel(
 					}
 					break
 				}
+			// Denne sjekker om man må legge til den sendte heisen i elevatormappet.
 			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
 				// Have not seen this elevator before
 				newElevator := ElevatorUpdate{msgFromNet.Elevator, true, 0}
@@ -145,6 +145,7 @@ func Handel(
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
+			// Denne forsøker å revive.
 			} else if e, ok := elevatorMap[msgFromNet.Elevator.Id]; ok && !e.Alive {
 				// Her forsøker jeg å revive heisen når den først er registrert
 				elevatorMap[e.Elevator.Id] = e
@@ -157,7 +158,7 @@ func Handel(
 					Elevator: e.Elevator,
 				}
 				break
-
+			// Denne bare oppdaterer elevatorMapet, med den nye versjonen av heisen.
 			} else {
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
@@ -176,7 +177,7 @@ func Handel(
 						sendToFsm(fromReAssigner)
 					}
 				}
-
+			// ER DENNE NØDVEDNIG.
 			case NewCab:
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 				if err != nil {
@@ -184,11 +185,12 @@ func Handel(
 				} else {
 					sendToFsm(fromReAssigner)
 				}
-
+			// Får inn clear hall fra andre heiser, og clearer det. 
 			case ClareHall:
 				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
 				updateHallLights(hall)
-
+			
+			// Ekke så sikker. THomasito
 			case RecoveredElevator:
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
@@ -201,7 +203,7 @@ func Handel(
 			}
 		
 
-/*			
+
 		case <-reRunTimer.C:
 			fmt.Print(" Re Run Timer \n")
 			reRunTimer.Reset(reRunRate)
@@ -211,7 +213,7 @@ func Handel(
 			} else {
 				sendToFsm(fromReAssigner)
 			}
-*/
+
 		case p := <-chPeerUpdate:
 			if printHandlerStates {fmt.Print("Message Handler: Peer Update \n")}
 			for _, id := range p.Lost {
