@@ -5,6 +5,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"errors"
+	"log"
 )
 
 // reAssign
@@ -21,16 +22,24 @@ func reAssign(
 	for id, val := range elevatorMap {
 		if val.Alive {
 			hraElev := val.Elevator.ToHRA()
+			if len(hraElev.CabRequests) == 0 {
+				return []assignValue{}, errors.New("Cab requests is empty")
+			}
 			input.States[id] = hraElev
 		}
 	}
 	if !elevatorMap[pid].Alive {
 		return []assignValue{}, errors.New("This Recived was not alive when running, and calculations are false ")
 	}
+
 	input.HallRequests = hall
+	log.Printf("Input to reAssigner: %+v\n", input)
+
 	result := assigner.Assign(input)
 	hallBefore := elevatorMap[pid].Elevator.Orders
 	hallAfter := result[pid]
+	log.Printf("Hall before (stored in elevator): %+v\n", hallBefore)
+	log.Printf("Hall after: %+v\n", hallAfter)
 	fromReAssigner := make([]assignValue, 0)
 	for f := 0; f < config.NumFloors; f++ {
 		for b := elevio.ButtonType(0); b < 2; b++ {

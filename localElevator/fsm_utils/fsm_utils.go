@@ -5,6 +5,7 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"fmt"
+	"log"
 )
 
 func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
@@ -19,15 +20,15 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 		switch e.Dir {
 		case elevio.MD_Up:
 			// Try floor -1
-			for f := e.Floor; f < config.NumFloors; f++ {
-				if e.Orders[f][elevio.BT_HallDown] || e.Orders[f][elevio.BT_Cab] || (e.Floor != config.NumFloors-1) {
+			for f := e.Floor + 1; f < config.NumFloors; f++ {
+				if e.Orders[f][elevio.BT_HallDown] || e.Orders[f][elevio.BT_Cab] && (e.Floor != config.NumFloors-1) {
 					return elevio.MD_Up
 				}
 			}
 
 		case elevio.MD_Down:
 			for f := 0; f < e.Floor; f++ {
-				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] || (e.Floor != 0){
+				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] && (e.Floor != 0) {
 					return elevio.MD_Down
 				}
 			}
@@ -64,7 +65,7 @@ func IsValidStop(e *elevator.Elevator) bool {
 func AnyCabOrdersAhead(e *elevator.Elevator) bool {
 	switch e.Dir {
 	case elevio.MD_Up:
-		for f := e.Floor; f < config.NumFloors; f++ {
+		for f := e.Floor + 1; f < config.NumFloors; f++ {
 			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallUp] {
 				return true
 			}
@@ -78,6 +79,7 @@ func AnyCabOrdersAhead(e *elevator.Elevator) bool {
 		}
 		return false
 	default:
+		log.Fatalf("Var i default i AnyCabOrdersAhead %s", e.String())
 		return false
 	}
 }
@@ -86,7 +88,7 @@ func AnyCabOrdersAhead(e *elevator.Elevator) bool {
 func AnyOrderInDirection(e *elevator.Elevator, dir elevio.MotorDirection) bool {
 	switch dir {
 	case elevio.MD_Up:
-		for f := e.Floor; f < config.NumFloors; f++ {
+		for f := e.Floor + 1; f < config.NumFloors; f++ {
 			for btn, _ := range e.Orders[f] {
 				if e.Orders[f][btn] {
 					return true

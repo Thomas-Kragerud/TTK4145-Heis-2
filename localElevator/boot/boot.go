@@ -3,6 +3,7 @@ package boot
 import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
+	"fmt"
 )
 
 func Elevator(
@@ -14,6 +15,7 @@ func Elevator(
 	elevio.Init("localhost:"+port, numFloors)
 	eObj := new(elevator.Elevator)
 	eObj.Init(pid)
+	fmt.Printf("Elevator %s\n", eObj.String())
 	//chMsgToNetwork <- *eObj
 
 	// Move elevator to closest "certain" floor

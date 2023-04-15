@@ -7,6 +7,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"fmt"
+	"log"
 )
 
 type Elevatorstate int
@@ -102,6 +103,24 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 	e.Orders[event.Floor][event.Button] = true
 }
 
+// ClearOrderAtFloor clears all orders at the specified floor in the direction the elevator is moving
+func (e *Elevator) ClearOrderAtFloorInDirection(floor int) {
+	e.Orders[floor][elevio.BT_Cab] = false
+	if e.Dir == elevio.MD_Up {
+		e.Orders[floor][elevio.BT_HallUp] = false
+
+		if e.Orders[floor][elevio.BT_HallDown] && !e.AnyCabOrdersAhead() {
+			e.Orders[floor][elevio.BT_HallDown] = false
+		}
+	} else if e.Dir == elevio.MD_Down {
+		e.Orders[floor][elevio.BT_HallDown] = false
+
+		if e.Orders[floor][elevio.BT_HallUp] && !e.AnyCabOrdersAhead() {
+			e.Orders[floor][elevio.BT_HallUp] = false
+		}
+	}
+}
+
 // ClearOrderAtFloor clears all orders at the specified floor in the elevator's order matrix.
 func (e *Elevator) ClearOrderAtFloor(floor int) {
 	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
@@ -124,7 +143,6 @@ func (e *Elevator) ClearAllOrders() {
 		e.ClearOrderAtFloor(f)
 		for b := elevio.ButtonType(0); b < 3; b++ {
 			elevio.SetButtonLamp(b, f, false)
-			fmt.Println("Clearing all lights")
 		}
 	}
 }
@@ -133,6 +151,17 @@ func (e *Elevator) OrderIsEmpty() bool {
 	for f := range e.Orders {
 		for btn := range e.Orders[f] {
 			if e.Orders[f][btn] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (e *Elevator) OrderIsEmptyExeptAtFloor() bool {
+	for f := range e.Orders {
+		for btn := range e.Orders[f] {
+			if e.Orders[f][btn] && f != e.Floor {
 				return false
 			}
 		}
@@ -164,12 +193,18 @@ func (e *Elevator) SetStateMoving() {
 }
 
 func (e *Elevator) ToHRA() config.HRAElevState {
-	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
-	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
 	var cabReq []bool
-	for _, btn := range e.Orders {
-		cabReq = append(cabReq, btn[2])
+	//for _, btn := range e.Orders {
+	//	cabReq = append(cabReq, btn[2])
+	//}
+	for f := 0; f < config.NumFloors; f++ {
+		if f < len(e.Orders) && len(e.Orders[f]) > 2 {
+			cabReq = append(cabReq, e.Orders[f][2])
+		} else {
+			cabReq = append(cabReq, false)
+		}
 	}
+	fmt.Printf("CabReq: %v\n", cabReq)
 	return config.HRAElevState{
 		Behavior:    _stateToString[e.State],
 		Floor:       e.Floor,
@@ -185,4 +220,27 @@ func (e *Elevator) ToHallReq() [][2]bool {
 	}
 	fmt.Printf("HallReq: %v\n", hallReq)
 	return hallReq
+}
+
+// AnyCabOrdersAhead Har lyst til å lage en som ikke bruker denne
+func (e *Elevator) AnyCabOrdersAhead() bool {
+	switch e.Dir {
+	case elevio.MD_Up:
+		for f := e.Floor + 1; f < config.NumFloors; f++ {
+			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallUp] {
+				return true
+			}
+		}
+		return false
+	case elevio.MD_Down:
+		for f := 0; f < e.Floor; f++ {
+			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallDown] {
+				return true
+			}
+		}
+		return false
+	default:
+		log.Fatalf("Var i default i AnyCabOrdersAhead %s", e.String())
+		return false
+	}
 }
