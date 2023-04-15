@@ -22,7 +22,7 @@ func FsmTest(
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
-	printFSMStates := false
+	printFSMStates := true
 	for {
 		eObj.UpdateLights()
 		//select {
@@ -35,8 +35,19 @@ func FsmTest(
 			case elevator.Idle:
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
+					eObj.AddOrder(btnEvent)
+					chNewState <- *eObj
+					eObj.ClearOrderFromBtn(btnEvent)
+					chNewState <- *eObj
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
+
+					// Save direction of hall btn
+					if btnEvent.Button == elevio.BT_HallUp {
+						eObj.Dir = elevio.MD_Up
+					} else if btnEvent.Button == elevio.BT_HallDown {
+						eObj.Dir = elevio.MD_Down
+					}
 					chNewState <- *eObj
 
 				} else {
@@ -114,7 +125,7 @@ func FsmTest(
 			case elevator.Moving:
 				if fsm_utils.IsValidStop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					eObj.ClearOrderAtFloor(eObj.Floor)       // Clear all orders at current floor
+					eObj.ClearOrderAtFloorInDirection(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
@@ -189,16 +200,46 @@ func FsmTest(
 					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
-				eObj.ClearOrderAtFloor(eObj.Floor) // Clear all orders at current floor
-				eObj.Dir = fsm_utils.GetNextDirection(eObj)
-				elevio.SetMotorDirection(eObj.Dir)
-				elevio.SetDoorOpenLamp(false)
-
-				if eObj.Dir == elevio.MD_Stop {
-					eObj.SetStateIdle()
-					chNewState <- *eObj
+				if eObj.Dir != elevio.MD_Stop {
+					eObj.ClearOrderAtFloorInDirection(eObj.Floor)
+					oldDir := eObj.Dir
+					eObj.Dir = fsm_utils.GetNextDirection(eObj)
+					switch eObj.Dir {
+					case oldDir:
+						//Close door
+						elevio.SetDoorOpenLamp(false)
+						eObj.SetStateMoving()
+						eObj.UpdateLights()
+						elevio.SetMotorDirection(eObj.Dir)
+					
+					case -oldDir:
+						// Oposit direction 
+						elevio.SetDoorOpenLamp(false)
+						eObj.ClearOrderAtFloor(eObj.Floor) // Clear hall in oposit direction 
+						eObj.SetStateMoving()
+						eObj.UpdateLights()
+						elevio.SetMotorDirection(eObj.Dir)
+					
+					case elevio.MD_Stop:
+						eObj.Dir = elevio.MD_Stop //
+						eObj.ClearOrderAtFloor(eObj.Floor) // Clear hall in oposit direction
+						doorTimer.Reset(config.DoorOpenTime) // Reset timer 						
+					}
+				
 				} else {
-					eObj.SetStateMoving()
+					// Motor direction is stop
+					eObj.Dir = fsm_utils.GetNextDirection(eObj)
+					if eObj.Dir == elevio.MD_Stop {
+						eObj.SetStateIdle()
+						elevio.SetDoorOpenLamp(false)
+						eObj.UpdateLights()
+					} else {
+						eObj.ClearOrderAtFloorInDirection(eObj.Floor)
+						elevio.SetDoorOpenLamp(false)
+						eObj.SetStateMoving()
+						elevio.SetMotorDirection(eObj.Dir)
+						eObj.UpdateLights()
+					}
 				}
 				chNewState <- *eObj
 			}

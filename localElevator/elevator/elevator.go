@@ -7,6 +7,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"fmt"
+	"log"
 )
 
 type Elevatorstate int
@@ -102,20 +103,21 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 	e.Orders[event.Floor][event.Button] = true
 }
 
+// ClearOrderAtFloor clears all orders at the specified floor in the direction the elevator is moving
+func (e *Elevator) ClearOrderAtFloorInDirection(floor int) {
+	e.Orders[floor][elevio.BT_Cab] = false
+	if e.Dir == elevio.MD_Up {
+		e.Orders[floor][elevio.BT_HallUp] = false
+
+	} else if e.Dir == elevio.MD_Down {
+		e.Orders[floor][elevio.BT_HallDown] = false
+	}
+}
+
 // ClearOrderAtFloor clears all orders at the specified floor in the elevator's order matrix.
 func (e *Elevator) ClearOrderAtFloor(floor int) {
-	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
-	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
-	switch e.Dir{
-	case elevio.MD_Up:
-		e.Orders[floor][0] = false
-		e.Orders[floor][2] = false
-	case elevio.MD_Down:
-		e.Orders[floor][1] = false
-		e.Orders[floor][2] = false
-	case elevio.MD_Stop:
-		e.Orders[floor][0] = false
-		e.Orders[floor][2] = false
+	for btn, _ := range e.Orders[floor] {
+		e.Orders[floor][btn] = false
 	}
 }
 
@@ -141,6 +143,17 @@ func (e *Elevator) OrderIsEmpty() bool {
 	for f := range e.Orders {
 		for btn := range e.Orders[f] {
 			if e.Orders[f][btn] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (e *Elevator) OrderIsEmptyExeptAtFloor() bool {
+	for f := range e.Orders {
+		for btn := range e.Orders[f] {
+			if e.Orders[f][btn] && f != e.Floor {
 				return false
 			}
 		}
@@ -202,4 +215,27 @@ func (e *Elevator) GetHallOrders() [][2]bool {
 		hallReq[i][1] = e.Orders[i][1]
 	}
 	return hallReq
+}
+
+// AnyCabOrdersAhead Har lyst til å lage en som ikke bruker denne
+func (e *Elevator) AnyCabOrdersAhead() bool {
+	switch e.Dir {
+	case elevio.MD_Up:
+		for f := e.Floor + 1; f < config.NumFloors; f++ {
+			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallUp] {
+				return true
+			}
+		}
+		return false
+	case elevio.MD_Down:
+		for f := 0; f < e.Floor; f++ {
+			if e.Orders[f][elevio.BT_Cab] || e.Orders[f][elevio.BT_HallDown] {
+				return true
+			}
+		}
+		return false
+	default:
+		log.Fatalf("Var i default i AnyCabOrdersAhead %s", e.String())
+		return false
+	}
 }

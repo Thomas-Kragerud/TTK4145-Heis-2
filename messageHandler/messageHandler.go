@@ -48,7 +48,7 @@ func Handel(
 		Event:    UpdateElevState,
 		Elevator: *thisElev,
 	}
-	printHandlerStates := true
+	printHandlerStates := false
 	for {
 		//fmt.Print(" HEI ")
 		select {
