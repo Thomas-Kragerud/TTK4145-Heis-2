@@ -25,8 +25,8 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-	reRunRate := 2000 * time.Millisecond
-	reRunTimer := time.NewTimer(reRunRate)
+	//reRunRate := 2000 * time.Millisecond
+	//reRunTimer := time.NewTimer(reRunRate)
 	LocalHall := make([][2]bool, config.NumFloors)
 	for i:=0; i<config.NumFloors; i++ {
 		LocalHall[i][0] = false
@@ -39,6 +39,7 @@ func Handel(
 			time.Sleep(config.PollRate)
 			if val.Type == Add {
 				chAddButtonToFsm <- val.BtnEvent
+				//LocalHall[val.BtnEvent.Floor][val.BtnEvent.Button] = true
 			} else if val.Type == Remove {
 				chRmButtonFromFsm <- val.BtnEvent
 			}
@@ -48,7 +49,7 @@ func Handel(
 		Event:    UpdateElevState,
 		Elevator: *thisElev,
 	}
-	printHandlerStates := false
+	printHandlerStates := true
 	for {
 		//fmt.Print(" HEI ")
 		select {
@@ -203,7 +204,7 @@ func Handel(
 			}
 		
 
-
+/* 
 		case <-reRunTimer.C:
 			fmt.Print(" Re Run Timer \n")
 			reRunTimer.Reset(reRunRate)
@@ -213,7 +214,7 @@ func Handel(
 			} else {
 				sendToFsm(fromReAssigner)
 			}
-
+ */
 		case p := <-chPeerUpdate:
 			if printHandlerStates {fmt.Print("Message Handler: Peer Update \n")}
 			for _, id := range p.Lost {

@@ -35,12 +35,9 @@ func FsmTest(
 			case elevator.Idle:
 				if eObj.Floor == btnEvent.Floor {
 					eObj.SetStateDoorOpen()
-					eObj.AddOrder(btnEvent)
-					chNewState <- *eObj
-					eObj.ClearOrderFromBtn(btnEvent)
-					chNewState <- *eObj
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
+					eObj.AddOrder(btnEvent)
 
 					// Save direction of hall btn
 					if btnEvent.Button == elevio.BT_HallUp {
@@ -203,7 +200,9 @@ func FsmTest(
 				if eObj.Dir != elevio.MD_Stop {
 					eObj.ClearOrderAtFloorInDirection(eObj.Floor)
 					oldDir := eObj.Dir
+					log.Printf("Old dir%v\n", oldDir)
 					eObj.Dir = fsm_utils.GetNextDirection(eObj)
+					log.Printf("Direction %v\n", eObj.Dir)
 					switch eObj.Dir {
 					case oldDir:
 						//Close door
@@ -211,6 +210,7 @@ func FsmTest(
 						eObj.SetStateMoving()
 						eObj.UpdateLights()
 						elevio.SetMotorDirection(eObj.Dir)
+						log.Printf("Move in same direction")
 					
 					case -oldDir:
 						// Oposit direction 
@@ -219,6 +219,7 @@ func FsmTest(
 						eObj.SetStateMoving()
 						eObj.UpdateLights()
 						elevio.SetMotorDirection(eObj.Dir)
+						log.Printf("Move in oposit direction")
 					
 					case elevio.MD_Stop:
 						eObj.Dir = elevio.MD_Stop //

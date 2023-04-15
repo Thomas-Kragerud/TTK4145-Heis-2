@@ -5,6 +5,7 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"fmt"
+	"log"
 )
 
 func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
@@ -20,14 +21,15 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 		case elevio.MD_Up:
 			// Try floor -1
 			for f := e.Floor+1; f < config.NumFloors; f++ {
-				if e.Orders[f][elevio.BT_HallDown] || e.Orders[f][elevio.BT_Cab] || (e.Floor != config.NumFloors-1) {
+				if e.Orders[f][elevio.BT_HallDown] || e.Orders[f][elevio.BT_Cab] && (e.Floor != config.NumFloors-1) {
 					return elevio.MD_Up
 				}
 			}
 
 		case elevio.MD_Down:
 			for f := 0; f < e.Floor; f++ {
-				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] || (e.Floor != 0){
+				if e.Orders[f][elevio.BT_HallUp] || e.Orders[f][elevio.BT_Cab] && (e.Floor != 0){
+					log.Printf("Going down")
 					return elevio.MD_Down
 				}
 			}
@@ -38,7 +40,7 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 				return elevio.MD_Up
 			}
 		}
-		return -e.Dir
+		return elevio.MD_Stop
 	}
 }
 
