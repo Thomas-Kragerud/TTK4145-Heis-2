@@ -22,6 +22,7 @@ func FsmTest(
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
+	printFSMStates := false
 	for {
 		eObj.UpdateLights()
 		//select {
@@ -29,6 +30,7 @@ func FsmTest(
 		//}
 		select {
 		case btnEvent := <-chAddButton:
+			if printFSMStates  {fmt.Print("FSM btnEvent \n")}
 			switch eObj.State {
 			case elevator.Idle:
 				if eObj.Floor == btnEvent.Floor {
@@ -68,6 +70,7 @@ func FsmTest(
 			}
 
 		case remove := <-chRmButton:
+			if printFSMStates {fmt.Print(("FSM remove \n"))}
 			switch eObj.State {
 			case elevator.Idle:
 				eObj.UpdateLights()
@@ -102,6 +105,7 @@ func FsmTest(
 			}
 
 		case floor := <-chIoFloor:
+			if printFSMStates {fmt.Print("FSM at FLoor \n")}
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
 
@@ -143,6 +147,7 @@ func FsmTest(
 			}
 
 		case obstruction := <-chIoObstical:
+			if printFSMStates {fmt.Print("FSM obs \n")}
 			switch eObj.State {
 			case elevator.Idle:
 				// Should the door not open and elevator not move?
@@ -165,6 +170,7 @@ func FsmTest(
 			chNewState <- *eObj // Send elevator states through channel
 
 		case stop := <-chIoStop:
+			if printFSMStates {fmt.Print("FSM Stop \n")}
 			fmt.Printf("%+v\n", stop)
 			for floor := 0; floor < config.NumFloors; floor++ {
 				eObj.ClearOrderAtFloor(floor)
@@ -176,6 +182,7 @@ func FsmTest(
 			os.Exit(1)
 
 		case <-doorTimer.C:
+			if printFSMStates {fmt.Print(" FSM doortimer \n")}
 			switch eObj.State {
 			case elevator.DoorOpen:
 				if eObj.Obs {

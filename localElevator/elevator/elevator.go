@@ -106,8 +106,16 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 func (e *Elevator) ClearOrderAtFloor(floor int) {
 	//e.OrderMutex.Lock()         // Lock the mutex before modifying the Orders field
 	//defer e.OrderMutex.Unlock() // Defer unlocking the mutex, so it's released even if the function returns early
-	for btn, _ := range e.Orders[floor] {
-		e.Orders[floor][btn] = false
+	switch e.Dir{
+	case elevio.MD_Up:
+		e.Orders[floor][0] = false
+		e.Orders[floor][2] = false
+	case elevio.MD_Down:
+		e.Orders[floor][1] = false
+		e.Orders[floor][2] = false
+	case elevio.MD_Stop:
+		e.Orders[floor][0] = false
+		e.Orders[floor][2] = false
 	}
 }
 
