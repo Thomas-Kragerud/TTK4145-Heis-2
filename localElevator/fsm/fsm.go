@@ -119,7 +119,6 @@ func FsmTest(
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
-					chStateUpdate <- *eObj               // Broadcast states
 					//fmt.Print(eObj.Orders[floor])
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) || (eObj.ReAssignStop) {
 					if eObj.ReAssignStop {
@@ -141,6 +140,7 @@ func FsmTest(
 					log.Printf("Ble redded fra å kjøre ut av bygget\n")
 					log.Printf("Elevator state: %v\n", eObj.String())
 				}
+				chStateUpdate <- *eObj               // Broadcast states
 			default:
 				log.Printf("Error: Elevator moving when it shoudnt, but received floor signal\n")
 				log.Printf("Elevator state: %v\n", eObj.String())

@@ -82,6 +82,16 @@ func Handel(
 			fmt.Print("MESSAGE HANDLER NEW STATE \n")
 			fmt.Print(elevatorMap[thisElev.Id].Elevator.Orders)
 			fmt.Print(newElevatorState.Orders)
+			for f := 0; f < config.NumFloors; f++ {
+				for b := elevio.ButtonType(0); b < 2; b++ {
+					if elevatorMap[thisElev.Id].Elevator.Orders[f][b] == newElevatorState.Orders[f][b] {
+						fmt.Print(" LIKE ")
+					} else { 
+						fmt.Print(" NOT LIKE ")
+					}
+				}
+				fmt.Print(" \n")
+			}
 			//OldHalls := e.Elevator.GetHallOrders()
 			//NewHalls := newElevatorState.GetHallOrders()
 			//elevatorMap[thisElev.Id] = e
@@ -93,10 +103,19 @@ func Handel(
 			e := elevatorMap[thisElev.Id]
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
-	
 			fmt.Print(elevatorMap[thisElev.Id].Elevator.Orders)
 			fmt.Print(newElevatorState.Orders)
-/*
+			for f := 0; f < config.NumFloors; f++ {
+				for b := elevio.ButtonType(0); b < 2; b++ {
+					if elevatorMap[thisElev.Id].Elevator.Orders[f][b] == newElevatorState.Orders[f][b] {
+						fmt.Print(" LIKE ")
+					} else { 
+						fmt.Print(" NOT LIKE ")
+					}
+				}
+				fmt.Print(" \n")
+			}
+/*				
 			switch e.Elevator.Dir {
 			case elevio.MD_Up:
 				for f := 0; f < config.NumFloors; f++ {
@@ -140,12 +159,11 @@ func Handel(
 					}
 				}
 			}
-*/
+*/	
 			chMsgToNetwork <- NetworkPackage{
 				Event:    UpdateElevState,
 				Elevator: e.Elevator,
 			}
-
 		case msgFromNet := <-chMsgFromNetwork:
 			fmt.Print("MESSAGE HANDLER FROM NETWORK \n")
 			if msgFromNet.Elevator.Id == thisElev.Id {
@@ -211,7 +229,7 @@ func Handel(
 				}
 
 			case UpdateElevState:
-				fmt.Print(" UPDATE ELEV STATE ")
+				fmt.Print(" UPDATE ELEV STATE \n")
 				//newElevatorState := msgFromNet.Elevator
 				// Clears hall buttons if there are any hall btns to clare (redundancy)
 				/*for f := 0; f < config.NumFloors; f++ {
@@ -228,6 +246,9 @@ func Handel(
 						}
 					}
 				}*/
+				fmt.Print("\n")
+				fmt.Print(elevatorMap[thisElev.Id].Elevator.Orders)
+				fmt.Print("\n")
 				break
 
 			case ClareHall:
@@ -241,9 +262,11 @@ func Handel(
 				e.Alive = true
 				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
+			fmt.Print("\n")
+			fmt.Print(elevatorMap[thisElev.Id].Elevator.Orders)
+			fmt.Print("\n")
 
 			}
-			fmt.Print(elevatorMap[thisElev.Id].Elevator.Orders)
 
 		/*case <-reRunTimer.C:
 			reRunTimer.Reset(reRunRate)
