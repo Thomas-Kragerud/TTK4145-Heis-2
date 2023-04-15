@@ -209,7 +209,7 @@ func Handel(
 							BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
 						}
 					}
-					if newElevatorState.Floor == f && (hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] && !newElevatorState.AnyCabOrdersAhead()) {
+					if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] && !newElevatorState.AnyCabOrdersAhead()) {
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
 						updateHallLights(hall)
 						chMsgToNetwork <- NetworkPackage{
