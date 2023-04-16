@@ -5,11 +5,11 @@ import (
 	"Project/elevio"
 	"Project/localElevator/elevator"
 	"Project/localElevator/fsm_utils"
-	"fmt"
 	"log"
 	"os"
 	"time"
 )
+
 
 func FsmTest(
 	eObj *elevator.Elevator,
@@ -36,7 +36,6 @@ func FsmTest(
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
-					//eObj.AddOrder(btnEvent) // Add order to orders - Do not need it really, but for consistency
 
 					if btnEvent.Button != elevio.BT_Cab {
 						chStateUpdate <- FsmOutput{
@@ -60,7 +59,6 @@ func FsmTest(
 				} else {
 					eObj.AddOrder(btnEvent) // Add order to orders
 					eObj.UpdateLights()
-					//************
 					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction, skal den være der 'her'?
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction
 					eObj.SetStateMoving()
@@ -204,7 +202,6 @@ func FsmTest(
 			case elevator.Moving:
 				if fsm_utils.IsValidStop(eObj) {
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
-					//eObj.ClearOrderAtFloorInDirection(eObj.Floor) // Clear all orders at current floor
 					var hallBtn, cabBtn *elevio.ButtonEvent
 					eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
 					log.Printf("Hallbtn: %v, Cabbtn: %v \n", hallBtn, cabBtn)
@@ -249,8 +246,6 @@ func FsmTest(
 					} else {
 						eObj.SetStateMoving()
 					}
-					log.Printf("Ble redded fra å kjøre ut av bygget\n")
-					log.Printf("Elevator state: %v\n", eObj.String())
 				}
 			default:
 				log.Printf("Error: Elevator moving when it shoudnt, but received floor signal\n")
@@ -302,15 +297,12 @@ func FsmTest(
 			}
 			switch eObj.State {
 			case elevator.DoorOpen:
-				fmt.Printf("Door timer!\n")
 				if eObj.Obs {
 					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
 				var hallBtn, cabBtn *elevio.ButtonEvent
 				if eObj.Dir != elevio.MD_Stop {
-					// Was idle and now door is open
-					//eObj.Dir = fsm_utils.GetNextDirection(eObj) // Still do not know which btn to clear
 
 					eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
 					if hallBtn != nil {
@@ -319,7 +311,6 @@ func FsmTest(
 							Event:    ClearHall,
 							BtnEvent: *hallBtn,
 						}
-						log.Printf("Sendte btn event")
 					}
 					if cabBtn != nil {
 						chStateUpdate <- FsmOutput{
@@ -332,7 +323,6 @@ func FsmTest(
 					switch fsm_utils.GetNextDirection(eObj) {
 					case prevDir:
 						// Same direction
-						log.Printf("Same direction\n")
 						elevio.SetDoorOpenLamp(false)
 						eObj.SetStateMoving()
 						elevio.SetMotorDirection(eObj.Dir)
@@ -344,7 +334,6 @@ func FsmTest(
 						break
 
 					case -prevDir:
-						log.Printf("Go Oposit direction\n")
 						elevio.SetDoorOpenLamp(false)
 						eObj.Dir = -eObj.Dir
 						eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
@@ -356,7 +345,6 @@ func FsmTest(
 								Event:    ClearHall,
 								BtnEvent: *hallBtn,
 							}
-							log.Printf("Sendte btn event")
 						}
 						if cabBtn != nil {
 							chStateUpdate <- FsmOutput{
@@ -369,10 +357,8 @@ func FsmTest(
 						break
 
 					case elevio.MD_Stop:
-						//eObj.Dir = elevio.MD_Stop
 						if eObj.OrderIsEmpty() {
 							eObj.Dir = elevio.MD_Stop
-							log.Printf("No orders\n")
 							elevio.SetDoorOpenLamp(false)
 							eObj.SetStateIdle()
 							chStateUpdate <- FsmOutput{
@@ -382,9 +368,7 @@ func FsmTest(
 							break
 						} else {
 							eObj.Dir = elevio.MD_Stop
-							log.Printf("Switiching Direction\n")
 							doorTimer.Reset(config.DoorOpenTime)
-							//eObj.ClearOrderAtFloor(eObj.Floor)
 							eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderWhenMDStop(eObj.Orders, eObj.Floor)
 							if hallBtn != nil {
 								chStateUpdate <- FsmOutput{
@@ -392,7 +376,6 @@ func FsmTest(
 									Event:    ClearHall,
 									BtnEvent: *hallBtn,
 								}
-								log.Printf("Sendte btn event")
 							}
 							if cabBtn != nil {
 								chStateUpdate <- FsmOutput{
@@ -405,8 +388,6 @@ func FsmTest(
 						}
 					}
 				} else {
-					// No direction
-					log.Printf("Dir stop\n")
 					eObj.Dir = fsm_utils.GetNextDirection(eObj)
 					if eObj.Dir == elevio.MD_Stop {
 						eObj.SetStateIdle()
@@ -417,7 +398,6 @@ func FsmTest(
 							Event:    Update,
 						}
 					} else {
-						//eObj.ClearOrderAtFloorInDirection(eObj.Floor)
 						eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
 
 						elevio.SetDoorOpenLamp(false)
@@ -430,7 +410,6 @@ func FsmTest(
 								Event:    ClearHall,
 								BtnEvent: *hallBtn,
 							}
-							log.Printf("Sendte btn event")
 						}
 						if cabBtn != nil {
 							chStateUpdate <- FsmOutput{
@@ -458,9 +437,5 @@ func FsmTest(
 
 		}
 		time.Sleep(config.PollRate)
-		log.Printf("End of FSM iteration %d\n", iter)
-		fmt.Printf("\n%s\n", eObj.String())
-		iter++
-		log.Printf("Direction (post) : %v\n", eObj.Dir)
 	}
 }

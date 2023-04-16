@@ -6,11 +6,10 @@ import (
 	"Project/localElevator/boot"
 	"Project/localElevator/fsm"
 	"Project/messageHandler"
-	"Project/network/T_SR"
+	"Project/network/networkBridge"
 	"Project/network/bcast"
 	"Project/network/peers"
 	"flag"
-	"fmt"
 )
 
 func main() {
@@ -19,31 +18,28 @@ func main() {
 	udpPeer := 6001
 	udpData := 6002
 	var numFloors int
-	var guiOn bool
-	var soundOn bool
 
+	//Parse flags
 	flag.StringVar(&port, "port", "", "Port of this elevator")
 	flag.StringVar(&id, "id", "", "id of this elevator")
 	flag.IntVar(&numFloors, "floors", 4, "number of elevator floors")
-	flag.BoolVar(&guiOn, "gui", false, "turn on gui")
-	flag.BoolVar(&soundOn, "sound", false, "turn on sound")
 	flag.Parse()
 	config.NumFloors = numFloors // Update config
-	fmt.Printf("Sound on%v\n", soundOn)
 
 	// Channels for networkMessaging
 	chIoButtons := make(chan elevio.ButtonEvent, 1)
-	chMsgToNetwork := make(chan T_SR.SROnNet, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
-	chMsgFromNetwork := make(chan T_SR.SROnNet, 100)
+	chMsgToNetwork := make(chan networkBridge.SROnNet, 100) // Buffer sånn at får med alle button press selv om kanskje dæver(?)
+	chMsgFromNetwork := make(chan networkBridge.SROnNet, 100)
 
-	chMsgToSend := make(chan messageHandler.NetworkPackage, 100)
-	chMsgFromReciver := make(chan messageHandler.NetworkPackage, 100)
+	chMsgToNBSend := make(chan messageHandler.NetworkPackage, 100)
+	chMsgFromNBReciver := make(chan messageHandler.NetworkPackage, 100)
 
+	// Channels for network
 	chPeerUpdate := make(chan peers.PeerUpdate)
 	chPeerTxEnable := make(chan bool)
 
 	// Buffer so fsm does not need to wait for messageHandler
-	chNewState := make(chan fsm.FsmOutput, 1000) // State updates from fsm to messageHandler
+	chStateUpdate := make(chan fsm.FsmOutput, 1000) // State updates from fsm to messageHandler
 
 	// Channels for local elevator
 	chIoFloor := make(chan int)
@@ -68,21 +64,21 @@ func main() {
 	go bcast.Transmitter(udpData, chMsgToNetwork)
 	go bcast.Receiver(udpData, chMsgFromNetwork)
 
-	go T_SR.Send(
+	go networkBridge.NBSend(
 		chMsgToNetwork,
-		chMsgToSend,
+		chMsgToNBSend,
 	)
 
-	go T_SR.Recive(
+	go networkBridge.NBRecive(
 		chMsgFromNetwork,
-		chMsgFromReciver)
+		chMsgFromNBReciver)
 
 	go fsm.FsmTest(
 		&eObj,
 		chIoFloor,
 		chIoObstical,
 		chIoStop,
-		chNewState,
+		chStateUpdate,
 		chRmButton,
 		chAddButton,
 	)
@@ -90,9 +86,9 @@ func main() {
 	go messageHandler.Handel(
 		&eObjCopy,
 		chIoButtons,
-		chMsgFromReciver,
-		chMsgToSend,
-		chNewState,
+		chMsgFromNBReciver,
+		chMsgToNBSend,
+		chStateUpdate,
 		chAddButton,
 		chRmButton,
 		chPeerUpdate,

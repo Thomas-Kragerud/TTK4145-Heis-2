@@ -30,8 +30,6 @@ func Handel(
 		Obstruction: false,
 	}
 	hall := make([][2]bool, config.NumFloors)
-	//reRunRate := 2000 * time.Millisecond
-	//reRunTimer := time.NewTimer(10 * time.Second)
 
 	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
@@ -128,11 +126,6 @@ func Handel(
 					Event:    UpdateElevState,
 					Elevator: updateStateFromFsm.Elevator,
 				}
-
-				/* 			case fsm.Obstruction:
-				chMsgFromNetwork <- NetworkPackage{
-					Event: ,
-				} */
 			}
 
 		case msgFromNet := <-chMsgFromNetwork:
@@ -216,8 +209,6 @@ func Handel(
 				} else {
 					log.Print("Hall button clared by self")
 				}
-				//hall = clareHallBTN(hall, msgFromNet.BtnEvent)
-				//updateHallLights(hall)
 
 			case RecoveredElevator:
 				e := elevatorMap[msgFromNet.Elevator.Id]
@@ -252,15 +243,6 @@ func Handel(
 				}
 			}
 
-		//case <-reRunTimer.C:
-		//	reRunTimer.Reset(reRunRate)
-		//	fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
-		//	if err != nil {
-		//		log.Print("None fatal error: \n", err)
-		//	} else {
-		//		sendToFsm(fromReAssigner)
-		//	}
-
 		case p := <-chPeerUpdate:
 			for _, id := range p.Lost {
 				if e, ok := elevatorMap[id]; ok && id != thisElev.Id {
@@ -282,12 +264,7 @@ func Handel(
 				if e.Elevator.Id == thisElev.Id {
 					log.Printf("Witnesed my own death")
 				}
-				fmt.Printf("Would be cool if %s resurected \n", p.New)
-				fmt.Printf(e.Elevator.String())
-				fmt.Println()
 			}
-			//default:
-			//	continue
 		}
 	}
 }
