@@ -48,7 +48,6 @@ func FsmTest(
 				elevio.SetMotorDirection(eObj.Dir)
 
 				if eObj.Dir == elevio.MD_Stop {
-					fmt.Print(" FAAAAAAAAAAAAAAAAAEN ! \n \n \n ")
 					// Elevator has no orders, and is moved to the closest floor
 					// Prevents elevator from stopping in between floors
 					if eObj.Floor >= 0 && eObj.Floor < config.NumFloors-1 {
@@ -217,6 +216,8 @@ func FsmTest(
 				}
 				//log.Printf("Door timer!")
 				if eObj.Dir != elevio.MD_Stop {
+					fmt.Print(" YEET YEET \n")
+
 					eObj.ClearOrderAtFloorInDirection(eObj.Floor)
 					oldDir := eObj.Dir
 					//log.Printf("Old dir%v\n", oldDir)
@@ -252,6 +253,7 @@ func FsmTest(
 					}
 				
 				} else {
+					fmt.Print(" PENIS PENIS \n")
 					// Motor direction is stop
 					eObj.Dir = fsm_utils.GetNextDirection(eObj)
 					if eObj.Dir == elevio.MD_Stop {
@@ -272,7 +274,5 @@ func FsmTest(
 				chNewState <- *eObj
 			}
 		}
-		//log.Printf("FSM %s\n", eObj.String())
-		
 	}
 }

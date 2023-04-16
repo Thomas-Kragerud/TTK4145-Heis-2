@@ -210,50 +210,16 @@ func Handel(
 				e.Alive = true
 				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
-
-/* 			case UpdateElevState:
-				oldNetLocalHall := oldNet.Elevator.GetHallOrders()
-				newNetLocalHall := msgFromNet.Elevator.GetHallOrders()
-
-
-				//NewLocalHall := newElevatorState.GetHallOrders()
-				// Clears hall buttons
-				for f := 0; f < config.NumFloors; f++ {
-					for b := elevio.ButtonType(0); b < 2; b++ {
-						if oldNetLocalHall[f][b] && !newNetLocalHall[f][b] && msgFromNet.Elevator.Floor == f {
-							hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-							chMsgToNetwork <- NetworkPackage{
-								Event:    ClareHall,
-								Elevator: msgFromNet.Elevator,
-								BtnEvent: elevio.ButtonEvent{f, b},
-							}
-							updateHallLights(hall)
-						}
+			case UpdateElevState:
+				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+					if err != nil {
+						log.Print("None fatal error: \n", err)
+					} else {
+						sendToFsm(fromReAssigner)
 					}
-				} */
-
-				
-				
-
 			default:
 				continue
 			}
-		
-
-		/* case <-reRunTimer.C:
-			fmt.Print(hall)
-			reRunTimer.Reset(reRunRate)
-			fmt.Print("\n")
- */
-/* 		case <-reRunTimer.C:
-			fmt.Print(" Re Run Timer \n")
-			reRunTimer.Reset(reRunRate)
-			fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
-			if err != nil {
-				log.Print("None fatal error: \n", err)
-			} else {
-				sendToFsm(fromReAssigner)
-			} */
 
 		case p := <-chPeerUpdate:
 			if printHandlerStates {fmt.Print("Message Handler: Peer Update \n")}
@@ -264,7 +230,17 @@ func Handel(
 					e.Alive = false
 					elevatorMap[id] = e
 					fmt.Printf("We lost %s\n", id)
-					
+					// SPØR THOMASITO PASITO DAME TU COSITO BARITO BARITO 
+/* 					chMsgToNetwork <- NetworkPackage{
+						Event:    UpdateElevState,
+						Elevator: e.Elevator,
+					} */
+					fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+					if err != nil {
+						log.Print("None fatal error: \n", err)
+					} else {
+						sendToFsm(fromReAssigner)
+					}
 				}
 			}
 
