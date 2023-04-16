@@ -5,6 +5,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"errors"
+	"fmt"
 )
 
 // reAssign
@@ -35,11 +36,13 @@ func reAssign(
 	for f := 0; f < config.NumFloors; f++ {
 		for b := elevio.ButtonType(0); b < 2; b++ {
 			if hallAfter[f][b] && !hallBefore[f][b] {
+				fmt.Print("Reassigner adding: ", elevio.ButtonEvent{f, b}, "\n")
 				fromReAssigner = append(
 					fromReAssigner,
 					assignValue{Add, elevio.ButtonEvent{f, b}})
 			}
-			if !hallAfter[f][b] && hallBefore[f][b] {
+			if !hallAfter[f][b] && hallBefore[f][b]{
+				fmt.Print("Reassigner Removing: ", elevio.ButtonEvent{f, b}, "\n")
 				fromReAssigner = append(
 					fromReAssigner,
 					assignValue{Remove, elevio.ButtonEvent{f, b}})

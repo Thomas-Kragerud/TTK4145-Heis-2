@@ -68,6 +68,7 @@ func Handle(
 			} else {
 				e := elevatorMap[thisElev.Id]
 				hall = addHallBTN(hall, ioButton) // Add hall to this elevator list of hall
+				fmt.Print("Updating hall lights from iobutton pressed mh  \n")
 				updateHallLights(hall)
 
 				msg := NetworkPackage{
@@ -86,25 +87,37 @@ func Handle(
 			}
 
 		case newElevatorState := <-chNewState:
-			fmt.Print("New state: ", newElevatorState, "\n")
+			fmt.Print("New states: ", newElevatorState, "\n")
 			e := elevatorMap[thisElev.Id]
+			fmt.Print("Old states: ", e.Elevator.Orders, "\n")
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
+			fmt.Print("Old states sgain: ", e.Elevator.Orders, "\n")
 
 			// Check if there is any difference between newElevatorState and e.Orders and set all different values to false in e.orders
 			for f := 0; f < config.NumFloors; f++ {
-				for b := elevio.ButtonType(0); b < 3; b++ {
-					if newElevatorState.Orders[f][b] != e.Elevator.Orders[f][b] {
+				for b := elevio.ButtonType(0); b < 2; b++ {
+					if newElevatorState.Orders[f][b] == false && e.Elevator.Orders[f][b] == true{
+						fmt.Print("Inside loop in newstate \n")
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-						updateHallLights(hall)
 						msgToVCSend <- NetworkPackage{
 							Event:    ClareHall,
 							Elevator: newElevatorState,
 							BtnEvent: elevio.ButtonEvent{f, b},
 						}
 					}
+					if newElevatorState.Orders[f][b] == true && e.Elevator.Orders[f][b] == false{
+						fmt.Print("Inside loop in newstate \n")
+						//hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
+						msgToVCSend <- NetworkPackage{
+							Event:    NewHall,
+							Elevator: newElevatorState,
+							BtnEvent: elevio.ButtonEvent{f, b},
+						}
+					}
 				}
 			}
+
 			msgToVCSend  <- NetworkPackage{
 				Event:    UpdateElevState,
 				Elevator: e.Elevator,
@@ -160,6 +173,7 @@ func Handle(
 			case NewHall:
 				if msgFromNet.Elevator.Id != thisElev.Id {
 					hall = addHallBTN(hall, msgFromNet.BtnEvent)
+					fmt.Print("Updating hall lights from newHall mh  \n")
 					updateHallLights(hall)
 					fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 					if err != nil {
@@ -179,26 +193,28 @@ func Handle(
 
 			case UpdateElevState:
 				newElevatorState := msgFromNet.Elevator
+
 				// Clears hall buttons if there are any hall btns to clare (redundancy)
 				for f := 0; f < config.NumFloors; f++ {
 					for b := elevio.ButtonType(0); b < 2; b++ {
-						if hall[f][b] && newElevatorState.Floor == f {
+						if hall[f][b] && newElevatorState.Floor == f && b == elevio.ButtonType(thisElev.Dir) {
 							hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 							updateHallLights(hall)
+							fmt.Print("Inside loop in updateElevstate\n")
 							msgToVCSend  <- NetworkPackage{
 								Event:    ClareHall,
 								Elevator: newElevatorState,
 								BtnEvent: elevio.ButtonEvent{f, b},
 							}
-							break
 						}
 					}
 				}
 
 
-			/* case ClareHall:
+			case ClareHall:
 				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall) */
+				fmt.Print("Updating hall lights from clearhall mh  \n")
+				updateHallLights(hall)
 
 			case RecoveredElevator:
 				e := elevatorMap[msgFromNet.Elevator.Id]

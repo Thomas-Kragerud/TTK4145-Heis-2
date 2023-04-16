@@ -108,13 +108,13 @@ func (e *Elevator) ClearOrderAtFloor(floor int) {
 	if e.Dir == elevio.MD_Up {
 		e.Orders[floor][elevio.BT_HallUp] = false
 
-		if e.Orders[floor][elevio.BT_HallDown] {
+		if floor == config.NumFloors-1 {
 			e.Orders[floor][elevio.BT_HallDown] = false 
 		}
 	} else if e.Dir == elevio.MD_Down {
 		e.Orders[floor][elevio.BT_HallDown] = false
 
-		if e.Orders[floor][elevio.BT_HallUp] {
+		if floor == 0{
 			e.Orders[floor][elevio.BT_HallUp] = false
 		}
 	}
