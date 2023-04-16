@@ -24,7 +24,7 @@ const (
 	NewCab            networkEvent = 0
 	UpdateElevState   networkEvent = 1
 	NewHall           networkEvent = 2
-	ClareHall         networkEvent = 4
+	ClearHall         networkEvent = 4
 	Recover           networkEvent = 5
 	RecoveredElevator networkEvent = 6
 )

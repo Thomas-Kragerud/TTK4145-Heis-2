@@ -58,7 +58,7 @@ func addHallBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
 	return hall
 }
 
-func clareHallBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
+func clearHallBTN(hall [][2]bool, btn elevio.ButtonEvent) [][2]bool {
 	if btn.Button == elevio.BT_HallUp {
 		hall[btn.Floor][0] = false
 	} else if btn.Button == elevio.BT_HallDown {
