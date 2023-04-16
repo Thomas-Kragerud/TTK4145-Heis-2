@@ -16,17 +16,16 @@ func FsmTest(
 	chIoFloor <-chan int,
 	chIoObstical <-chan bool,
 	chIoStop <-chan bool,
-	chStateUpdate chan<- elevator.Elevator,
+	chStateUpdate chan<- FsmOutput,
 	chRmButton <-chan elevio.ButtonEvent,
 	chAddButton <-chan elevio.ButtonEvent,
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
 	eObj.ClearAllOrders()
+	iter := 0
 	for {
 		eObj.UpdateLights()
-		//select {
-		//
-		//}
+		log.Printf("Start FSM iteration %d\n", iter)
 		select {
 		case btnEvent := <-chAddButton:
 			switch eObj.State {
@@ -35,23 +34,50 @@ func FsmTest(
 					eObj.SetStateDoorOpen()
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
-					chStateUpdate <- *eObj
+					//eObj.AddOrder(btnEvent) // Add order to orders - Do not need it really, but for consistency
+
+					if btnEvent.Button != elevio.BT_Cab {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearHall,
+							BtnEvent: btnEvent,
+						}
+						if btnEvent.Button == elevio.BT_HallUp {
+							eObj.Dir = elevio.MD_Up
+						} else {
+							eObj.Dir = elevio.MD_Down
+						}
+					} else {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearCab,
+							BtnEvent: btnEvent,
+						}
+					}
 
 				} else {
 					eObj.AddOrder(btnEvent) // Add order to orders
 					eObj.UpdateLights()
-					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction
+					//************
+					eObj.Dir = fsm_utils.GetNextDirection(eObj) // Find direction, skal den være der 'her'?
 					elevio.SetMotorDirection(eObj.Dir)          // Set direction
 					eObj.SetStateMoving()
-					chStateUpdate <- *eObj
-
+					chStateUpdate <- FsmOutput{
+						Elevator: *eObj,
+						Event:    Update,
+						BtnEvent: btnEvent,
+					}
 				}
 				break
 
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
-				//chStateUpdate <- *eObj
+				chStateUpdate <- FsmOutput{
+					Elevator: *eObj,
+					Event:    Update,
+					BtnEvent: btnEvent,
+				}
 				break
 
 			case elevator.DoorOpen:
@@ -59,11 +85,41 @@ func FsmTest(
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(config.DoorOpenTime)
 					eObj.UpdateLights()
-
+					if btnEvent.Button == elevio.BT_Cab {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearCab,
+							BtnEvent: btnEvent,
+						}
+					}
+					if btnEvent.Button == elevio.BT_HallUp && eObj.Dir == elevio.MD_Up {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearHall,
+							BtnEvent: btnEvent,
+						}
+					} else if btnEvent.Button == elevio.BT_HallDown && eObj.Dir == elevio.MD_Down {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearHall,
+							BtnEvent: btnEvent,
+						}
+					} else {
+						eObj.AddOrder(btnEvent)
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    Update,
+							BtnEvent: btnEvent,
+						}
+					}
 				} else {
 					eObj.AddOrder(btnEvent)
+					chStateUpdate <- FsmOutput{
+						Elevator: *eObj,
+						Event:    Update,
+						BtnEvent: btnEvent,
+					}
 				}
-				chStateUpdate <- *eObj
 				break
 			}
 
@@ -71,6 +127,10 @@ func FsmTest(
 			switch eObj.State {
 			case elevator.Idle:
 				eObj.UpdateLights()
+				chStateUpdate <- FsmOutput{
+					Elevator: *eObj,
+					Event:    Update,
+				}
 				break
 
 			case elevator.Moving:
@@ -89,14 +149,23 @@ func FsmTest(
 					}
 					eObj.ReAssignStop = true // Set flag to reassign stop
 				}
+				chStateUpdate <- FsmOutput{
+					Elevator: *eObj,
+					Event:    Update,
+				}
 				break
 
 			case elevator.DoorOpen:
 				if eObj.Floor == remove.Floor {
+					eObj.ClearOrderFromBtn(remove)
 					continue
 				} else {
 					eObj.ClearOrderFromBtn(remove)
 					eObj.UpdateLights()
+				}
+				chStateUpdate <- FsmOutput{
+					Elevator: *eObj,
+					Event:    Update,
 				}
 				break
 			}
@@ -109,13 +178,32 @@ func FsmTest(
 
 			case elevator.Moving:
 				if fsm_utils.IsValidStop(eObj) {
-					elevio.SetMotorDirection(elevio.MD_Stop)      // Stop the elevator
-					eObj.ClearOrderAtFloorInDirection(eObj.Floor) // Clear all orders at current floor
+					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
+					//eObj.ClearOrderAtFloorInDirection(eObj.Floor) // Clear all orders at current floor
+					var hallBtn, cabBtn *elevio.ButtonEvent
+					eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
+					log.Printf("Hallbtn: %v, Cabbtn: %v \n", hallBtn, cabBtn)
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime) // Reset the door timer
 					eObj.SetStateDoorOpen()              // Set state to DoorOpen
 					eObj.UpdateLights()                  // Update alle elevator lights
-					chStateUpdate <- *eObj               // Broadcast states
+
+					if hallBtn != nil {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearHall,
+							BtnEvent: *hallBtn,
+						}
+						log.Printf("Sendte btn event")
+					}
+					if cabBtn != nil {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearCab,
+							BtnEvent: *cabBtn,
+						}
+					}
+
 				} else if (floor == 0 && eObj.Dir == elevio.MD_Down) || (floor == config.NumFloors-1 && eObj.Dir == elevio.MD_Up) || (eObj.ReAssignStop) {
 					if eObj.ReAssignStop {
 						eObj.ReAssignStop = false
@@ -129,7 +217,10 @@ func FsmTest(
 
 					if eObj.Dir == elevio.MD_Stop {
 						eObj.SetStateIdle()
-						chStateUpdate <- *eObj
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    Update,
+						}
 					} else {
 						eObj.SetStateMoving()
 					}
@@ -162,7 +253,7 @@ func FsmTest(
 					eObj.Obs = false
 				}
 			}
-			chStateUpdate <- *eObj // Send elevator states through channel
+			//chStateUpdate <- *eObj // Send elevator states through channel
 
 		case stop := <-chIoStop:
 			fmt.Printf("%+v\n", stop)
@@ -172,29 +263,154 @@ func FsmTest(
 			eObj.Dir = elevio.MD_Stop
 			elevio.SetMotorDirection(eObj.Dir)
 			eObj.ClearAllOrders()
-			chStateUpdate <- *eObj // Send elevator states through channel
+			//chStateUpdate <- *eObj // Send elevator states through channel
 			os.Exit(1)
 
 		case <-doorTimer.C:
 			switch eObj.State {
 			case elevator.DoorOpen:
+				fmt.Printf("Door timer!\n")
 				if eObj.Obs {
 					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
-				eObj.ClearOrderAtFloorInDirection(eObj.Floor) // Clear all orders at current floor
-				eObj.Dir = fsm_utils.GetNextDirection(eObj)
-				elevio.SetMotorDirection(eObj.Dir)
-				elevio.SetDoorOpenLamp(false)
+				var hallBtn, cabBtn *elevio.ButtonEvent
+				if eObj.Dir != elevio.MD_Stop {
+					// Was idle and now door is open
+					//eObj.Dir = fsm_utils.GetNextDirection(eObj) // Still do not know which btn to clear
 
-				if eObj.Dir == elevio.MD_Stop {
-					eObj.SetStateIdle()
-					chStateUpdate <- *eObj
+					eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
+					if hallBtn != nil {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearHall,
+							BtnEvent: *hallBtn,
+						}
+						log.Printf("Sendte btn event")
+					}
+					if cabBtn != nil {
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    ClearCab,
+							BtnEvent: *cabBtn,
+						}
+					}
+					prevDir := eObj.Dir
+					switch fsm_utils.GetNextDirection(eObj) {
+					case prevDir:
+						// Same direction
+						log.Printf("Same direction\n")
+						elevio.SetDoorOpenLamp(false)
+						eObj.SetStateMoving()
+						elevio.SetMotorDirection(eObj.Dir)
+						eObj.UpdateLights()
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    Update,
+						}
+						break
+
+					case -prevDir:
+						log.Printf("Go Oposit direction\n")
+						elevio.SetDoorOpenLamp(false)
+						eObj.Dir = -eObj.Dir
+						eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
+						eObj.SetStateMoving()
+						elevio.SetMotorDirection(eObj.Dir)
+						if hallBtn != nil {
+							chStateUpdate <- FsmOutput{
+								Elevator: *eObj,
+								Event:    ClearHall,
+								BtnEvent: *hallBtn,
+							}
+							log.Printf("Sendte btn event")
+						}
+						if cabBtn != nil {
+							chStateUpdate <- FsmOutput{
+								Elevator: *eObj,
+								Event:    ClearCab,
+								BtnEvent: *cabBtn,
+							}
+						}
+						eObj.UpdateLights()
+						break
+
+					case elevio.MD_Stop:
+						eObj.Dir = elevio.MD_Stop
+						if eObj.OrderIsEmpty() {
+							log.Printf("No orders\n")
+							elevio.SetDoorOpenLamp(false)
+							eObj.SetStateIdle()
+							chStateUpdate <- FsmOutput{
+								Elevator: *eObj,
+								Event:    Update,
+							}
+							break
+						} else {
+							log.Printf("Switiching Direction\n")
+							doorTimer.Reset(config.DoorOpenTime)
+							//eObj.ClearOrderAtFloor(eObj.Floor)
+							eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderWhenMDStop(eObj.Orders, eObj.Floor)
+							if hallBtn != nil {
+								chStateUpdate <- FsmOutput{
+									Elevator: *eObj,
+									Event:    ClearHall,
+									BtnEvent: *hallBtn,
+								}
+								log.Printf("Sendte btn event")
+							}
+							if cabBtn != nil {
+								chStateUpdate <- FsmOutput{
+									Elevator: *eObj,
+									Event:    ClearCab,
+									BtnEvent: *cabBtn,
+								}
+							}
+							break
+						}
+					}
 				} else {
-					eObj.SetStateMoving()
+					// No direction
+					log.Printf("Dir stop\n")
+					eObj.Dir = fsm_utils.GetNextDirection(eObj)
+					if eObj.Dir == elevio.MD_Stop {
+						eObj.SetStateIdle()
+						elevio.SetDoorOpenLamp(false)
+						eObj.UpdateLights()
+						chStateUpdate <- FsmOutput{
+							Elevator: *eObj,
+							Event:    Update,
+						}
+					} else {
+						//eObj.ClearOrderAtFloorInDirection(eObj.Floor)
+						eObj.Orders, hallBtn, cabBtn = fsm_utils.ClearOrderInDirection(eObj.Orders, eObj.Floor, eObj.Dir)
+
+						elevio.SetDoorOpenLamp(false)
+						eObj.SetStateMoving()
+						elevio.SetMotorDirection(eObj.Dir)
+						eObj.UpdateLights()
+						if hallBtn != nil {
+							chStateUpdate <- FsmOutput{
+								Elevator: *eObj,
+								Event:    ClearHall,
+								BtnEvent: *hallBtn,
+							}
+							log.Printf("Sendte btn event")
+						}
+						if cabBtn != nil {
+							chStateUpdate <- FsmOutput{
+								Elevator: *eObj,
+								Event:    ClearCab,
+								BtnEvent: *cabBtn,
+							}
+						}
+					}
 				}
-				chStateUpdate <- *eObj
 			}
 		}
+		time.Sleep(config.PollRate)
+		log.Printf("End of FSM iteration %d\n", iter)
+		fmt.Printf("\n%s\n", eObj.String())
+		iter++
 	}
 }

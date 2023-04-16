@@ -4,6 +4,7 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"Project/localElevator/elevator"
+	"Project/localElevator/fsm"
 	"Project/network/peers"
 	"fmt"
 	"log"
@@ -15,7 +16,7 @@ func Handel(
 	chIoButtons <-chan elevio.ButtonEvent,
 	chMsgFromNetwork <-chan NetworkPackage,
 	chMsgToNetwork chan<- NetworkPackage,
-	chFromFsm <-chan elevator.Elevator,
+	chFromFsm <-chan fsm.FsmOutput,
 	chAddButtonToFsm chan<- elevio.ButtonEvent,
 	chRmButtonFromFsm chan<- elevio.ButtonEvent,
 	chPeerUpdate <-chan peers.PeerUpdate,
@@ -25,17 +26,17 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true}
 	hall := make([][2]bool, config.NumFloors)
-	reRunRate := 2000 * time.Millisecond
-	reRunTimer := time.NewTimer(10 * time.Second)
+	//reRunRate := 2000 * time.Millisecond
+	//reRunTimer := time.NewTimer(10 * time.Second)
 
 	// Anonymous function that handles the sending to the fsm
 	sendToFsm := func(fromReAssigner []assignValue) {
 		for _, val := range fromReAssigner {
 			time.Sleep(config.PollRate)
-			if val.Type == Add {
-				chAddButtonToFsm <- val.BtnEvent
-			} else if val.Type == Remove {
+			if val.Type == Remove {
 				chRmButtonFromFsm <- val.BtnEvent
+			} else if val.Type == Add {
+				chAddButtonToFsm <- val.BtnEvent
 			}
 		}
 	}
@@ -83,37 +84,34 @@ func Handel(
 				}
 			}
 
-		case newElevatorState := <-chFromFsm:
+		case updateStateFromFsm := <-chFromFsm:
 			// New information about the local elevator from the fsm
+			updateElevator := updateStateFromFsm.Elevator
 			e := elevatorMap[thisElev.Id]
-			e.Elevator = newElevatorState
+			e.Elevator = updateElevator
 			elevatorMap[thisElev.Id] = e
 
-			// Check if any halls where cleared
-			for f := 0; f < config.NumFloors; f++ {
-				if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp] && !newElevatorState.AnyCabOrdersAhead()) {
-					hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
-					updateHallLights(hall)
-					chMsgToNetwork <- NetworkPackage{
-						Event:    ClareHall,
-						Elevator: newElevatorState,
-						BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
-					}
+			switch updateStateFromFsm.Event {
+			case fsm.ClearHall:
+				hall = clareHallBTN(hall, updateStateFromFsm.BtnEvent)
+				updateHallLights(hall)
+				chMsgToNetwork <- NetworkPackage{
+					Event:    ClareHall,
+					Elevator: updateStateFromFsm.Elevator,
+					BtnEvent: updateStateFromFsm.BtnEvent,
 				}
-				if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] && !newElevatorState.AnyCabOrdersAhead()) {
-					hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
-					updateHallLights(hall)
-					chMsgToNetwork <- NetworkPackage{
-						Event:    ClareHall,
-						Elevator: newElevatorState,
-						BtnEvent: elevio.ButtonEvent{f, elevio.MD_Down},
-					}
-					break
+			case fsm.ClearCab:
+				chMsgToNetwork <- NetworkPackage{
+					Event:    UpdateElevState,
+					Elevator: updateStateFromFsm.Elevator,
+					BtnEvent: updateStateFromFsm.BtnEvent,
 				}
-			}
-			chMsgToNetwork <- NetworkPackage{
-				Event:    UpdateElevState,
-				Elevator: e.Elevator,
+
+			case fsm.Update:
+				chMsgToNetwork <- NetworkPackage{
+					Event:    UpdateElevState,
+					Elevator: updateStateFromFsm.Elevator,
+				}
 			}
 
 		case msgFromNet := <-chMsgFromNetwork:
@@ -135,13 +133,17 @@ func Handel(
 					break
 				}
 			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
-				// Have not seen this elevator before
-				newElevator := ElevatorUpdate{msgFromNet.Elevator, true}
-				elevatorMap[msgFromNet.Elevator.Id] = newElevator
-				this := elevatorMap[thisElev.Id] // Broadcast to net so the new elevator see the first elevator
-				chMsgToNetwork <- NetworkPackage{
-					Event:    UpdateElevState,
-					Elevator: this.Elevator,
+				if msgFromNet.Elevator.Id != "" {
+					// Have not seen this elevator before
+					newElevator := ElevatorUpdate{msgFromNet.Elevator, true}
+					elevatorMap[msgFromNet.Elevator.Id] = newElevator
+					this := elevatorMap[thisElev.Id] // Broadcast to net so the new elevator see the other elevators on the network
+					chMsgToNetwork <- NetworkPackage{
+						Event:    UpdateElevState,
+						Elevator: this.Elevator,
+					}
+				} else {
+					log.Printf("Hallisinuerte en heis\n")
 				}
 			} else if e, ok := elevatorMap[msgFromNet.Elevator.Id]; ok && !e.Alive {
 				// Recover dead elevator that is now back online
@@ -182,51 +184,56 @@ func Handel(
 					sendToFsm(fromReAssigner)
 				}
 
-			case UpdateElevState:
-				newElevatorState := msgFromNet.Elevator
-				// Clears hall buttons if there are any hall btns to clare (redundancy)
-				for f := 0; f < config.NumFloors; f++ {
-					if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp] && !newElevatorState.AnyCabOrdersAhead()) {
-						hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
-						updateHallLights(hall)
-						chMsgToNetwork <- NetworkPackage{
-							Event:    ClareHall,
-							Elevator: newElevatorState,
-							BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
-						}
-					}
-					if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] && !newElevatorState.AnyCabOrdersAhead()) {
-						hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
-						updateHallLights(hall)
-						chMsgToNetwork <- NetworkPackage{
-							Event:    ClareHall,
-							Elevator: newElevatorState,
-							BtnEvent: elevio.ButtonEvent{f, elevio.MD_Down},
-						}
-						break
-					}
-				}
+			//case UpdateElevState:
+			//	newElevatorState := msgFromNet.Elevator
+			//	// Clears hall buttons if there are any hall btns to clare (redundancy)
+			//	for f := 0; f < config.NumFloors; f++ {
+			//		if (newElevatorState.Floor == f && hall[f][elevio.BT_HallUp] && newElevatorState.Dir == elevio.MD_Up) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Down && hall[f][elevio.BT_HallUp] && !newElevatorState.AnyCabOrdersAhead()) {
+			//			hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallUp})
+			//			updateHallLights(hall)
+			//			chMsgToNetwork <- NetworkPackage{
+			//				Event:    ClareHall,
+			//				Elevator: newElevatorState,
+			//				BtnEvent: elevio.ButtonEvent{f, elevio.BT_HallUp},
+			//			}
+			//		}
+			//		if (newElevatorState.Floor == f && hall[f][elevio.BT_HallDown] && newElevatorState.Dir == elevio.MD_Down) || (newElevatorState.Floor == f && newElevatorState.Dir == elevio.MD_Up && hall[f][elevio.BT_HallDown] && !newElevatorState.AnyCabOrdersAhead()) {
+			//			hall = clareHallBTN(hall, elevio.ButtonEvent{f, elevio.BT_HallDown})
+			//			updateHallLights(hall)
+			//			chMsgToNetwork <- NetworkPackage{
+			//				Event:    ClareHall,
+			//				Elevator: newElevatorState,
+			//				BtnEvent: elevio.ButtonEvent{f, elevio.MD_Down},
+			//			}
+			//			break
+			//		}
+			//	}
 
 			case ClareHall:
-				hall = clareHallBTN(hall, msgFromNet.BtnEvent)
-				updateHallLights(hall)
+				if msgFromNet.Elevator.Id != thisElev.Id {
+					hall = clareHallBTN(hall, msgFromNet.BtnEvent)
+					updateHallLights(hall)
+				} else {
+					log.Print("Hall button clared by self")
+				}
+				//hall = clareHallBTN(hall, msgFromNet.BtnEvent)
+				//updateHallLights(hall)
 
 			case RecoveredElevator:
 				e := elevatorMap[msgFromNet.Elevator.Id]
 				e.Elevator = msgFromNet.Elevator
 				e.Alive = true
 				elevatorMap[msgFromNet.Elevator.Id] = e
-
 			}
 
-		case <-reRunTimer.C:
-			reRunTimer.Reset(reRunRate)
-			fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
-			if err != nil {
-				log.Print("None fatal error: \n", err)
-			} else {
-				sendToFsm(fromReAssigner)
-			}
+		//case <-reRunTimer.C:
+		//	reRunTimer.Reset(reRunRate)
+		//	fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+		//	if err != nil {
+		//		log.Print("None fatal error: \n", err)
+		//	} else {
+		//		sendToFsm(fromReAssigner)
+		//	}
 
 		case p := <-chPeerUpdate:
 			for _, id := range p.Lost {
@@ -247,8 +254,8 @@ func Handel(
 				fmt.Printf(e.Elevator.String())
 				fmt.Println()
 			}
-		default:
-			continue
+			//default:
+			//	continue
 		}
 	}
 }

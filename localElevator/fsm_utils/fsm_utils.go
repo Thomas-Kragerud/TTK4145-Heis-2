@@ -34,13 +34,18 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 			}
 		case elevio.MD_Stop:
 			if AnyOrderInDirection(e, elevio.MD_Down) {
+				// Any order below?
 				return elevio.MD_Down
-			} else {
+			} else if AnyOrderInDirection(e, elevio.MD_Up) {
+				// Any order above?
 				return elevio.MD_Up
+			} else {
+				// No orders except own floor
+				return elevio.MD_Stop
 			}
 		}
 		fmt.Printf("Linje 188: Bytta rettning \n")
-		return -e.Dir
+		return elevio.MD_Stop
 	}
 }
 
@@ -111,37 +116,66 @@ func AnyOrderInDirection(e *elevator.Elevator, dir elevio.MotorDirection) bool {
 	}
 }
 
-func NewStatesFromAssigner(
-	newStates map[string][][3]bool,
-	pid string,
-	chVirtualButtons chan<- elevio.ButtonEvent,
-	chRemoveOrders chan<- elevio.ButtonEvent,
-	e elevator.Elevator) {
-	for id, ord := range newStates {
-		if id == pid {
-			//fmt.Printf("New states from assigner: %+v", ord)
-			for f := range ord {
-				for b := range ord[f] {
-					if ord[f][b] {
-						//f !e.Orders[f][b] {
-						chVirtualButtons <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
-						//}
-					} else {
-						if e.Orders[f][b] {
-							chRemoveOrders <- elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
-						}
-					}
-				}
-			}
+func ClearOrderInDirection(Orders [][]bool, floor int, Dir elevio.MotorDirection) ([][]bool, *elevio.ButtonEvent, *elevio.ButtonEvent) {
+	var hallbtn *elevio.ButtonEvent
+	var cabbtn *elevio.ButtonEvent
+	ord := make([][]bool, len(Orders))
+	copy(ord, Orders)
+
+	switch Dir {
+	case elevio.MD_Up:
+		if ord[floor][elevio.BT_HallUp] {
+			Orders[floor][elevio.BT_HallUp] = false
+			hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallUp}
+		} else if ord[floor][elevio.BT_HallDown] && floor == config.NumFloors-1 {
+			Orders[floor][elevio.BT_HallDown] = false
+			hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallDown}
+			log.Printf("Skal nu i clear ord")
+		}
+	case elevio.MD_Down:
+		if ord[floor][elevio.BT_HallDown] {
+			Orders[floor][elevio.BT_HallDown] = false
+			hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallDown}
+		} else if ord[floor][elevio.BT_HallUp] && floor == 0 {
+			Orders[floor][elevio.BT_HallUp] = false
+			hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallUp}
+			log.Printf("Skal nu i clear ord nede")
 		}
 	}
+
+	if ord[floor][elevio.BT_Cab] {
+		ord[floor][elevio.BT_Cab] = false
+		cabbtn = &elevio.ButtonEvent{floor, elevio.BT_Cab}
+	}
+
+	log.Printf("Sendte buttons")
+	return ord, hallbtn, cabbtn
 }
 
-func ClearHallOrdersAtFloor(eObj *elevator.Elevator, clearHallFsm chan<- elevio.ButtonEvent) {
-	if eObj.Orders[eObj.Floor][elevio.BT_HallUp] {
-		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallUp}
+func ClearOrderWhenMDStop(Orders [][]bool, floor int) ([][]bool, *elevio.ButtonEvent, *elevio.ButtonEvent) {
+	var hallbtn *elevio.ButtonEvent
+	var cabbtn *elevio.ButtonEvent
+	ord := make([][]bool, len(Orders))
+	copy(ord, Orders)
+
+	if ord[floor][elevio.BT_HallUp] && ord[floor][elevio.BT_HallDown] {
+		log.Fatalf("Error ClearOrderWhenMDStop - Skal ikke være begge knappene trykket samtidig")
 	}
-	if eObj.Orders[eObj.Floor][elevio.BT_HallDown] {
-		clearHallFsm <- elevio.ButtonEvent{Floor: eObj.Floor, Button: elevio.BT_HallDown}
+
+	if ord[floor][elevio.BT_HallUp] {
+		Orders[floor][elevio.BT_HallUp] = false
+		hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallUp}
+
+	} else if ord[floor][elevio.BT_HallDown] {
+		Orders[floor][elevio.BT_HallDown] = false
+		hallbtn = &elevio.ButtonEvent{floor, elevio.BT_HallDown}
+
 	}
+
+	if ord[floor][elevio.BT_Cab] {
+		ord[floor][elevio.BT_Cab] = false
+		cabbtn = &elevio.ButtonEvent{floor, elevio.BT_Cab}
+	}
+
+	return ord, hallbtn, cabbtn
 }

@@ -4,7 +4,6 @@ import (
 	"Project/config"
 	"Project/elevio"
 	"Project/localElevator/boot"
-	"Project/localElevator/elevator"
 	"Project/localElevator/fsm"
 	"Project/messageHandler"
 	"Project/network/T_SR"
@@ -44,14 +43,14 @@ func main() {
 	chPeerTxEnable := make(chan bool)
 
 	// Buffer so fsm does not need to wait for messageHandler
-	chNewState := make(chan elevator.Elevator, 100)
+	chNewState := make(chan fsm.FsmOutput, 1000) // State updates from fsm to messageHandler
 
 	// Channels for local elevator
 	chIoFloor := make(chan int)
 	chIoObstical := make(chan bool)
 	chIoStop := make(chan bool)
-	chAddButton := make(chan elevio.ButtonEvent, 1)
-	chRmButton := make(chan elevio.ButtonEvent, 1)
+	chAddButton := make(chan elevio.ButtonEvent, 100)
+	chRmButton := make(chan elevio.ButtonEvent, 100)
 
 	// Goroutines for interfacing with I/O
 	go elevio.PollFloorSensor(chIoFloor)
@@ -76,7 +75,7 @@ func main() {
 
 	go T_SR.Recive(
 		chMsgFromNetwork,
-		chMsgFromReciver, )
+		chMsgFromReciver)
 
 	go fsm.FsmTest(
 		&eObj,

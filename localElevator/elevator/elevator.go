@@ -104,18 +104,19 @@ func (e *Elevator) AddOrder(event elevio.ButtonEvent) {
 // ClearOrderAtFloor clears all orders at the specified floor in the direction the elevator is moving
 func (e *Elevator) ClearOrderAtFloorInDirection(floor int) {
 	e.Orders[floor][elevio.BT_Cab] = false
-	if e.Dir == elevio.MD_Up {
+	switch e.Dir {
+	case elevio.MD_Up:
 		e.Orders[floor][elevio.BT_HallUp] = false
-
-		if e.Orders[floor][elevio.BT_HallDown] && !e.AnyCabOrdersAhead() {
-			e.Orders[floor][elevio.BT_HallDown] = false
-		}
-	} else if e.Dir == elevio.MD_Down {
+		//if e.Orders[floor][elevio.BT_HallDown] && !e.AnyCabOrdersAhead() {
+		//	e.Orders[floor][elevio.BT_HallDown] = false
+		//}
+	case elevio.MD_Down:
 		e.Orders[floor][elevio.BT_HallDown] = false
-
-		if e.Orders[floor][elevio.BT_HallUp] && !e.AnyCabOrdersAhead() {
-			e.Orders[floor][elevio.BT_HallUp] = false
-		}
+		//if e.Orders[floor][elevio.BT_HallUp] && !e.AnyCabOrdersAhead() {
+		//	e.Orders[floor][elevio.BT_HallUp] = false
+		//}
+	case elevio.MD_Stop:
+		log.Println("Error: Her skal ikke jeg være")
 	}
 }
 
