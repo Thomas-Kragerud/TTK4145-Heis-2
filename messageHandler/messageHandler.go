@@ -25,7 +25,7 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-	//reRunRate := 2000 * time.Millisecond
+	//reRunRate := 200 * time.Millisecond
 	//reRunTimer := time.NewTimer(reRunRate)
 	LocalHall := make([][2]bool, config.NumFloors)
 	for i:=0; i<config.NumFloors; i++ {
@@ -97,9 +97,14 @@ func Handel(
 			elevatorMap[thisElev.Id] = e
 			NewLocalHall := newElevatorState.GetHallOrders()
 			// Clears hall buttons
+			fmt.Print("LOCAL HALLS \n")
+			fmt.Print(LocalHall,"\n")
+			fmt.Print("NEW LOCAL HALLS \n")
+			fmt.Print(NewLocalHall,"\n")
 			for f := 0; f < config.NumFloors; f++ {
 				for b := elevio.ButtonType(0); b < 2; b++ {
 					if LocalHall[f][b] && !NewLocalHall[f][b] && newElevatorState.Floor == f {
+						fmt.Print(" YA YA VI CLEARE ORDRE \n")
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 						chMsgToNetwork <- NetworkPackage{
 							Event:    ClareHall,
@@ -230,7 +235,11 @@ func Handel(
 			}
 		
 
-
+		/* case <-reRunTimer.C:
+			fmt.Print(hall)
+			reRunTimer.Reset(reRunRate)
+			fmt.Print("\n")
+ */
 /* 		case <-reRunTimer.C:
 			fmt.Print(" Re Run Timer \n")
 			reRunTimer.Reset(reRunRate)
@@ -239,8 +248,8 @@ func Handel(
 				log.Print("None fatal error: \n", err)
 			} else {
 				sendToFsm(fromReAssigner)
-			}
- */
+			} */
+
 		case p := <-chPeerUpdate:
 			if printHandlerStates {fmt.Print("Message Handler: Peer Update \n")}
 			for _, id := range p.Lost {
@@ -261,8 +270,8 @@ func Handel(
 				fmt.Printf(e.Elevator.String())
 				fmt.Println()
 			}
-//		default:
-//			continue
+		default:
+			continue
 		}
 	}
 }

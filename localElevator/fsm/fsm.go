@@ -251,16 +251,18 @@ func FsmTest(
 						eObj.SetStateIdle()
 						elevio.SetDoorOpenLamp(false)
 						eObj.UpdateLights()
+						chNewState <- *eObj
 					} else {
 						eObj.ClearOrderAtFloorInDirection(eObj.Floor)
 						elevio.SetDoorOpenLamp(false)
 						eObj.SetStateMoving()
 						elevio.SetMotorDirection(eObj.Dir)
 						eObj.UpdateLights()
+						chNewState <- *eObj
 					}
 		
 				}
-				
+				chNewState <- *eObj
 			}
 		}
 		log.Printf("FSM %s\n", eObj.String())
