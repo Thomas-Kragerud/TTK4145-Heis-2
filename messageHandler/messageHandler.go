@@ -112,6 +112,11 @@ func Handel(
 					Event:    UpdateElevState,
 					Elevator: updateStateFromFsm.Elevator,
 				}
+
+/* 			case fsm.Obstruction:
+				chMsgFromNetwork <- NetworkPackage{
+					Event: ,
+				} */
 			}
 
 		case msgFromNet := <-chMsgFromNetwork:

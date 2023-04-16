@@ -27,6 +27,7 @@ const (
 	ClareHall         networkEvent = 4
 	Recover           networkEvent = 5
 	RecoveredElevator networkEvent = 6
+	Obstruction       networkEvent = 7
 )
 
 type NetworkPackage struct {

@@ -105,7 +105,7 @@ func FsmTest(
 							Event:    ClearHall,
 							BtnEvent: btnEvent,
 						}
-					 /*} else if btnEvent.Button != elevio.BT_Cab && eObj.Dir == elevio.MD_Stop {
+					 } else if btnEvent.Button != elevio.BT_Cab && eObj.Dir == elevio.MD_Stop {
 						chStateUpdate <- FsmOutput{
 							Elevator: *eObj,
 							Event:    ClearHall,
@@ -117,7 +117,7 @@ func FsmTest(
 						} else {
 							eObj.Dir = elevio.MD_Down
 
-						} */
+						}
 					} else {
 						eObj.AddOrder(btnEvent)
 						chStateUpdate <- FsmOutput{
@@ -264,6 +264,10 @@ func FsmTest(
 			case elevator.DoorOpen:
 				if obstruction {
 					eObj.Obs = true
+					chStateUpdate <- FsmOutput{
+						Event: Obstruction,
+						Elevator: *eObj,
+					}
 				} else {
 					eObj.Obs = false
 				}
