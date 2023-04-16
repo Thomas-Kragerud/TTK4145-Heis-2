@@ -248,6 +248,12 @@ func Handel(
 					e.Alive = false
 					elevatorMap[id] = e
 					fmt.Printf("We lost %s\n", id)
+					fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
+					if err != nil {
+						log.Print("None fatal error: \n", err)
+					} else {
+						sendToFsm(fromReAssigner)
+					}
 				}
 			}
 
