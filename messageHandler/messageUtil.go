@@ -20,7 +20,7 @@ func reAssign(
 		States:       make(map[string]config.HRAElevState),
 		HallRequests: make([][2]bool, config.NumFloors)}
 	for id, val := range elevatorMap {
-		if val.Alive {
+		if val.Alive && !val.Obstruction {
 			hraElev := val.Elevator.ToHRA()
 			if len(hraElev.CabRequests) == 0 {
 				return []assignValue{}, errors.New("Cab requests is empty")
@@ -28,7 +28,7 @@ func reAssign(
 			input.States[id] = hraElev
 		}
 	}
-	if !elevatorMap[pid].Alive {
+	if !elevatorMap[pid].Alive || elevatorMap[pid].Obstruction {
 		return []assignValue{}, errors.New("This Recived was not alive when running, and calculations are false ")
 	}
 

@@ -21,13 +21,14 @@ type networkEvent int
 
 // Gjør til så bostaver når ikke brukes utenfor mappe
 const (
-	NewCab            networkEvent = 0
-	UpdateElevState   networkEvent = 1
-	NewHall           networkEvent = 2
-	ClareHall         networkEvent = 4
-	Recover           networkEvent = 5
-	RecoveredElevator networkEvent = 6
-	Obstruction       networkEvent = 7
+	NewCab             networkEvent = 0
+	UpdateElevState    networkEvent = 1
+	NewHall            networkEvent = 2
+	ClareHall          networkEvent = 4
+	Recover            networkEvent = 5
+	RecoveredElevator  networkEvent = 6
+	Obstruction        networkEvent = 7
+	ClearedObstruction networkEvent = 8
 )
 
 type NetworkPackage struct {
@@ -37,6 +38,7 @@ type NetworkPackage struct {
 }
 
 type ElevatorUpdate struct {
-	Elevator elevator.Elevator
-	Alive    bool
+	Elevator    elevator.Elevator
+	Alive       bool
+	Obstruction bool
 }

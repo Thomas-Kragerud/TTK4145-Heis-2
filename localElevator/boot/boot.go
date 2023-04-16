@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+//Boots the elevator
 func Elevator(
 	pid,
 	port string,

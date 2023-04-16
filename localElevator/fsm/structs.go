@@ -8,12 +8,11 @@ import (
 type FsmEvent int
 
 const (
-	ClearBtn    FsmEvent = 0
-	ClearHall   FsmEvent = 1
-	ClearCab    FsmEvent = 2
-	NewState    FsmEvent = 3
-	Update      FsmEvent = 4
-	Obstruction FsmEvent = 5
+	ClearHall          FsmEvent = 1
+	ClearCab           FsmEvent = 2
+	Update             FsmEvent = 4
+	Obstruction        FsmEvent = 5
+	ClearedObstruction FsmEvent = 6
 )
 
 type FsmOutput struct {

@@ -21,6 +21,8 @@ func FsmTest(
 	chAddButton <-chan elevio.ButtonEvent,
 ) {
 	doorTimer := time.NewTimer(0) // Initialise timer
+	stuckTimer := time.NewTimer(0)
+	stuck := false
 	eObj.ClearAllOrders()
 	iter := 0
 	for {
@@ -35,7 +37,6 @@ func FsmTest(
 					elevio.SetDoorOpenLamp(true)
 					doorTimer.Reset(config.DoorOpenTime)
 					//eObj.AddOrder(btnEvent) // Add order to orders - Do not need it really, but for consistency
-	
 
 					if btnEvent.Button != elevio.BT_Cab {
 						chStateUpdate <- FsmOutput{
@@ -105,7 +106,7 @@ func FsmTest(
 							Event:    ClearHall,
 							BtnEvent: btnEvent,
 						}
-					 } else if btnEvent.Button != elevio.BT_Cab && eObj.Dir == elevio.MD_Stop {
+					} else if btnEvent.Button != elevio.BT_Cab && eObj.Dir == elevio.MD_Stop {
 						chStateUpdate <- FsmOutput{
 							Elevator: *eObj,
 							Event:    ClearHall,
@@ -186,8 +187,17 @@ func FsmTest(
 			}
 
 		case floor := <-chIoFloor:
+			if stuck {
+				stuck = false
+				eObj.Obs = false
+				chStateUpdate <- FsmOutput{
+					Event:    ClearedObstruction,
+					Elevator: *eObj,
+				}
+			}
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
+			stuckTimer.Reset(4 * time.Second)
 
 			switch eObj.State {
 
@@ -265,27 +275,31 @@ func FsmTest(
 				if obstruction {
 					eObj.Obs = true
 					chStateUpdate <- FsmOutput{
-						Event: Obstruction,
+						Event:    Obstruction,
 						Elevator: *eObj,
 					}
 				} else {
 					eObj.Obs = false
+					doorTimer.Reset(config.DoorOpenTime)
+					chStateUpdate <- FsmOutput{
+						Event:    ClearedObstruction,
+						Elevator: *eObj,
+					}
 				}
 			}
-			//chStateUpdate <- *eObj // Send elevator states through channel
-
-		case stop := <-chIoStop:
-			fmt.Printf("%+v\n", stop)
-			for floor := 0; floor < config.NumFloors; floor++ {
-				eObj.ClearOrderAtFloor(floor)
-			}
-			eObj.Dir = elevio.MD_Stop
-			elevio.SetMotorDirection(eObj.Dir)
-			eObj.ClearAllOrders()
-			//chStateUpdate <- *eObj // Send elevator states through channel
+		case <-chIoStop:
 			os.Exit(1)
 
 		case <-doorTimer.C:
+			stuckTimer.Reset(4*time.Second)
+			if stuck {
+				stuck = false
+				eObj.Obs = false
+				chStateUpdate <- FsmOutput{
+					Event:    ClearedObstruction,
+					Elevator: *eObj,
+				}
+			}
 			switch eObj.State {
 			case elevator.DoorOpen:
 				fmt.Printf("Door timer!\n")
@@ -428,6 +442,20 @@ func FsmTest(
 					}
 				}
 			}
+		case <-stuckTimer.C:
+			if eObj.State == elevator.Idle{
+				stuckTimer.Reset(4 * time.Second)
+			} else {
+				eObj.Obs = true
+				stuck = true
+					chStateUpdate <- FsmOutput{
+						Event:    Obstruction,
+						Elevator: *eObj,
+					}
+			}
+			
+
+
 		}
 		time.Sleep(config.PollRate)
 		log.Printf("End of FSM iteration %d\n", iter)

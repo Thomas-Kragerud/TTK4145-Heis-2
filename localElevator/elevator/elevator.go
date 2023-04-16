@@ -127,6 +127,7 @@ func (e *Elevator) ClearOrderAtFloor(floor int) {
 	}
 }
 
+//ClearOrderFromBtn clears orders from button.
 func (e *Elevator) ClearOrderFromBtn(button elevio.ButtonEvent) {
 	e.Orders[button.Floor][button.Button] = false
 }
@@ -141,6 +142,7 @@ func (e *Elevator) ClearAllOrders() {
 		}
 	}
 }
+
 
 func (e *Elevator) OrderIsEmpty() bool {
 	for f := range e.Orders {

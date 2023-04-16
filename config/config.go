@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// Configuration values for the elevator
+
 var NumFloors = 4
 
 const NumButtons = 3

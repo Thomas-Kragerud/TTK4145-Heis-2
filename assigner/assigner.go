@@ -8,15 +8,16 @@ import (
 	"runtime"
 )
 
-// Assign -
+
+// This function takes a input on the HRAI form, and returns a map of the new orders of all the elevators present in the HRAI. That is, this elevator 
+// reassignes all the active orders using the executable provides. The executable is located in the costfunc folder
 func Assign(inData config.HRAInput) map[string][][3]bool {
-	// Mekk test asigner inn her og få den til å funke med
 	jsonBytes, err := json.Marshal(inData)
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)
 	}
 
-	var ret []uint8
+	var ret []uint8 
 
 	if runtime.GOOS == "darwin" {
 		ret, err = exec.Command(
@@ -47,8 +48,6 @@ func Assign(inData config.HRAInput) map[string][][3]bool {
 		fmt.Println("Command output:", string(ret))
 		fmt.Printf("input Data %v\n", inData)
 	}
-
-	//fmt.Println("Assigner output: ", *output)
 	return *output
 
 }
