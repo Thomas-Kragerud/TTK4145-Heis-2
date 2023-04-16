@@ -48,7 +48,6 @@ func Handle(
 	for {
 		select {
 		case ioButton := <-chIoButtons:
-			fmt.Print("Button pressed: ", ioButton, "\n")
 			if ioButton.Button == elevio.BT_Cab {
 				e := elevatorMap[thisElev.Id]
 				e.Elevator.AddOrder(ioButton)
@@ -71,52 +70,24 @@ func Handle(
 				fmt.Print("Updating hall lights from iobutton pressed mh  \n")
 				updateHallLights(hall)
 
-				msg := NetworkPackage{
-					NewHall,
-					e.Elevator,
-					ioButton,
-				}
-				msgToVCSend <- msg
-
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 				if err != nil {
 					log.Print("None fatal error: \n", err)
 				} else {
 					sendToFsm(fromReAssigner)
 				}
+
+				msgToVCSend <- NetworkPackage{
+					NewCab,
+					e.Elevator,
+					ioButton,
+				}
 			}
 
 		case newElevatorState := <-chNewState:
-			fmt.Print("New states: ", newElevatorState, "\n")
 			e := elevatorMap[thisElev.Id]
-			fmt.Print("Old states: ", e.Elevator.Orders, "\n")
 			e.Elevator = newElevatorState
 			elevatorMap[thisElev.Id] = e
-			fmt.Print("Old states sgain: ", e.Elevator.Orders, "\n")
-
-			// Check if there is any difference between newElevatorState and e.Orders and set all different values to false in e.orders
-			for f := 0; f < config.NumFloors; f++ {
-				for b := elevio.ButtonType(0); b < 2; b++ {
-					if newElevatorState.Orders[f][b] == false && e.Elevator.Orders[f][b] == true{
-						fmt.Print("Inside loop in newstate \n")
-						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-						msgToVCSend <- NetworkPackage{
-							Event:    ClareHall,
-							Elevator: newElevatorState,
-							BtnEvent: elevio.ButtonEvent{f, b},
-						}
-					}
-					if newElevatorState.Orders[f][b] == true && e.Elevator.Orders[f][b] == false{
-						fmt.Print("Inside loop in newstate \n")
-						//hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
-						msgToVCSend <- NetworkPackage{
-							Event:    NewHall,
-							Elevator: newElevatorState,
-							BtnEvent: elevio.ButtonEvent{f, b},
-						}
-					}
-				}
-			}
 
 			msgToVCSend  <- NetworkPackage{
 				Event:    UpdateElevState,
@@ -127,7 +98,6 @@ func Handle(
 			fmt.Print(msgFromNet.Event)
 			if msgFromNet.Elevator.Id == thisElev.Id {
 				if msgFromNet.Event == Recover {
-					// *****
 					for f := 0; f < config.NumFloors; f++ {
 						for b := elevio.ButtonType(0); b < 3; b++ {
 							if msgFromNet.Elevator.Orders[f][b] {
@@ -140,7 +110,6 @@ func Handle(
 						Event:    RecoveredElevator,
 						Elevator: msgFromNet.Elevator,
 					}
-					break
 				}
 			} else if _, ok := elevatorMap[msgFromNet.Elevator.Id]; !ok {
 				// Have not seen this elevator before
@@ -151,6 +120,7 @@ func Handle(
 					Event:    UpdateElevState,
 					Elevator: this.Elevator,
 				}
+
 			} else if e, ok := elevatorMap[msgFromNet.Elevator.Id]; ok && !e.Alive {
 				// Her forsøker jeg å revive heisen når den først er registrert
 				elevatorMap[e.Elevator.Id] = e
@@ -169,6 +139,7 @@ func Handle(
 				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
 			}
+
 			switch msgFromNet.Event {
 			case NewHall:
 				if msgFromNet.Elevator.Id != thisElev.Id {
@@ -193,8 +164,11 @@ func Handle(
 
 			case UpdateElevState:
 				newElevatorState := msgFromNet.Elevator
+				e := elevatorMap[thisElev.Id]
+				e.Elevator = newElevatorState
+				elevatorMap[thisElev.Id] = e
 
-				// Clears hall buttons if there are any hall btns to clare (redundancy)
+				/* // Clears hall buttons if there are any hall btns to clare (redundancy)
 				for f := 0; f < config.NumFloors; f++ {
 					for b := elevio.ButtonType(0); b < 2; b++ {
 						if hall[f][b] && newElevatorState.Floor == f && b == elevio.ButtonType(thisElev.Dir) {
@@ -208,7 +182,7 @@ func Handle(
 							}
 						}
 					}
-				}
+				} */
 
 
 			case ClareHall:

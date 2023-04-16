@@ -48,7 +48,7 @@ func Fsm(
 			case elevator.Moving:
 				// Add order to queue
 				eObj.AddOrder(btnEvent)
-				//chNewState <- *eObj
+				
 				break
 
 			case elevator.DoorOpen:
