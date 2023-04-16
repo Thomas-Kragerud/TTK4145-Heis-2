@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fce36719-0f04-40bb-b532-7ba9593c7ce9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/localElevator/fsm/structs.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/localElevator/elevator/elevator.go" beforeDir="false" afterPath="$PROJECT_DIR$/localElevator/elevator/elevator.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/localElevator/fsm/fsm.go" beforeDir="false" afterPath="$PROJECT_DIR$/localElevator/fsm/fsm.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/localElevator/fsm_utils/fsm_utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/localElevator/fsm_utils/fsm_utils.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/messageHandler/messageHandler.go" beforeDir="false" afterPath="$PROJECT_DIR$/messageHandler/messageHandler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/T_SR/send.go" beforeDir="false" afterPath="$PROJECT_DIR$/network/T_SR/send.go" afterDir="false" />
-    </list>
+    <list default="true" id="fce36719-0f04-40bb-b532-7ba9593c7ce9" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
