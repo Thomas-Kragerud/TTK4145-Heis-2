@@ -99,7 +99,8 @@ func Handel(
 			elevatorMap[thisElev.Id] = e
 			NewLocalHall := newElevatorState.GetHallOrders()
 			// Clears hall buttons
-			fmt.Print("THE GLOABL HALLS ")
+			fmt.Print("\n")
+			fmt.Print("THE GLOABL HALLS \n")
 			fmt.Print(hall,"\n")
 			fmt.Print("LOCAL HALLS \n")
 			fmt.Print(LocalHall,"\n")
@@ -263,6 +264,7 @@ func Handel(
 					e.Alive = false
 					elevatorMap[id] = e
 					fmt.Printf("We lost %s\n", id)
+					
 				}
 			}
 

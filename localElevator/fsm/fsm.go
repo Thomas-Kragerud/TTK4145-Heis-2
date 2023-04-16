@@ -43,10 +43,12 @@ func FsmTest(
 			case elevator.Moving:
 				eObj.ClearOrderFromBtn(remove)
 				eObj.UpdateLights()
+				fmt.Print(elevio.ToStringMotorDirection( eObj.Dir))
 				eObj.Dir = fsm_utils.GetNextDirection(eObj)
 				elevio.SetMotorDirection(eObj.Dir)
 
 				if eObj.Dir == elevio.MD_Stop {
+					fmt.Print(" FAAAAAAAAAAAAAAAAAEN ! \n \n \n ")
 					// Elevator has no orders, and is moved to the closest floor
 					// Prevents elevator from stopping in between floors
 					if eObj.Floor >= 0 && eObj.Floor < config.NumFloors-1 {
@@ -129,10 +131,14 @@ func FsmTest(
 			eObj.SetFloor(floor)
 			eObj.UpdateLights()
 
-			switch eObj.State {
-
+			fmt.Print(eObj.Orders[floor][elevio.BT_HallUp],'\n')
+			if eObj.Dir == elevio.MD_Up{fmt.Print(" DIR = UP \n")}
+			if eObj.Dir == elevio.MD_Stop{fmt.Print(" DIR == STOP \n")}
+			switch eObj.State {	
 			case elevator.Moving:
+				fmt.Print("MOVING \n")
 				if fsm_utils.IsValidStop(eObj) {
+					fmt.Print("VALID STOP \n")
 					elevio.SetMotorDirection(elevio.MD_Stop) // Stop the elevator
 					eObj.ClearOrderAtFloorInDirection(eObj.Floor)       // Clear all orders at current floor
 					elevio.SetDoorOpenLamp(true)
