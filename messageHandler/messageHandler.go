@@ -38,11 +38,13 @@ func Handel(
 		for _, val := range fromReAssigner {
 			time.Sleep(config.PollRate)
 			if val.Type == Add {
+				fmt.Print("REASSIgn ADDER \n")
 				chAddButtonToFsm <- val.BtnEvent
 				//LocalHall[val.BtnEvent.Floor][val.BtnEvent.Button] = true
 			} else if val.Type == Remove {
+				fmt.Print("Reassign fjerner \n")
 				chRmButtonFromFsm <- val.BtnEvent
-				//LocalHall[val.BtnEvent.Floor][val.BtnEvent.Button] = false
+				LocalHall[val.BtnEvent.Floor][val.BtnEvent.Button] = false
 			}
 		}
 	}
@@ -50,7 +52,7 @@ func Handel(
 		Event:    UpdateElevState,
 		Elevator: *thisElev,
 	}
-	printHandlerStates := false
+	printHandlerStates := true
 	for {
 		select {
 		case ioButton := <-chIoButtons:
@@ -59,13 +61,13 @@ func Handel(
 				e := elevatorMap[thisElev.Id]
 				e.Elevator.AddOrder(ioButton)
 				elevatorMap[thisElev.Id] = e
-				chAddButtonToFsm <- ioButton
 				fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
 				if err != nil {
 					log.Print("None fatal error: \n", err)
 				} else {
 					sendToFsm(fromReAssigner)
 				}
+				chAddButtonToFsm <- ioButton
 				chMsgToNetwork <- NetworkPackage{
 					NewCab,
 					e.Elevator,
@@ -97,14 +99,16 @@ func Handel(
 			elevatorMap[thisElev.Id] = e
 			NewLocalHall := newElevatorState.GetHallOrders()
 			// Clears hall buttons
+			fmt.Print("THE GLOABL HALLS ")
+			fmt.Print(hall,"\n")
 			fmt.Print("LOCAL HALLS \n")
 			fmt.Print(LocalHall,"\n")
 			fmt.Print("NEW LOCAL HALLS \n")
 			fmt.Print(NewLocalHall,"\n")
 			for f := 0; f < config.NumFloors; f++ {
 				for b := elevio.ButtonType(0); b < 2; b++ {
-					if LocalHall[f][b] && !NewLocalHall[f][b] && newElevatorState.Floor == f {
-						fmt.Print(" YA YA VI CLEARE ORDRE \n")
+					if LocalHall[f][b] && !NewLocalHall[f][b] {//&& newElevatorState.Floor == f {
+						/* fmt.Print(" YA YA VI CLEARE ORDRE \n") */
 						hall = clareHallBTN(hall, elevio.ButtonEvent{f, b})
 						chMsgToNetwork <- NetworkPackage{
 							Event:    ClareHall,
