@@ -25,8 +25,8 @@ func Handel(
 	elevatorMap := make(map[string]ElevatorUpdate)
 	elevatorMap[thisElev.Id] = ElevatorUpdate{*thisElev, true, 0}
 	hall := make([][2]bool, config.NumFloors)
-	reRunRate := 2000 * time.Millisecond
-	reRunTimer := time.NewTimer(reRunRate)
+	//reRunRate := 2000 * time.Millisecond
+	//reRunTimer := time.NewTimer(reRunRate)
 	LocalHall := make([][2]bool, config.NumFloors)
 	for i:=0; i<config.NumFloors; i++ {
 		LocalHall[i][0] = false
@@ -117,7 +117,8 @@ func Handel(
 			}
 
 		case msgFromNet := <-chMsgFromNetwork:
-			oldNet := elevatorMap[msgFromNet.Elevator.Id]
+			//reRunTimer.Reset(reRunRate)
+			//oldNet := elevatorMap[msgFromNet.Elevator.Id]
 			if printHandlerStates {fmt.Print("Message Handler: From Network \n")}
 			// Denne sjekker om det er en recover message fra nettet.
 			if msgFromNet.Elevator.Id == thisElev.Id {
@@ -200,7 +201,7 @@ func Handel(
 				e.Version++
 				elevatorMap[msgFromNet.Elevator.Id] = e
 
-			case UpdateElevState:
+/* 			case UpdateElevState:
 				oldNetLocalHall := oldNet.Elevator.GetHallOrders()
 				newNetLocalHall := msgFromNet.Elevator.GetHallOrders()
 
@@ -219,7 +220,7 @@ func Handel(
 							updateHallLights(hall)
 						}
 					}
-				}
+				} */
 
 				
 				
@@ -230,7 +231,7 @@ func Handel(
 		
 
 
-		case <-reRunTimer.C:
+/* 		case <-reRunTimer.C:
 			fmt.Print(" Re Run Timer \n")
 			reRunTimer.Reset(reRunRate)
 			fromReAssigner, err := reAssign(thisElev.Id, elevatorMap, hall)
@@ -239,7 +240,7 @@ func Handel(
 			} else {
 				sendToFsm(fromReAssigner)
 			}
-
+ */
 		case p := <-chPeerUpdate:
 			if printHandlerStates {fmt.Print("Message Handler: Peer Update \n")}
 			for _, id := range p.Lost {

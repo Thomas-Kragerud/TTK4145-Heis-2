@@ -19,7 +19,6 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 	} else {
 		switch e.Dir {
 		case elevio.MD_Up:
-			// Try floor -1
 			for f := e.Floor+1; f < config.NumFloors; f++ {
 				if e.Orders[f][elevio.BT_HallDown] || e.Orders[f][elevio.BT_Cab] && (e.Floor != config.NumFloors-1) {
 					return elevio.MD_Up
@@ -38,6 +37,7 @@ func GetNextDirection(e *elevator.Elevator) elevio.MotorDirection {
 				return elevio.MD_Down
 			} else {
 				return elevio.MD_Up
+				log.Printf("Kjøre opp")
 			}
 		}
 		return elevio.MD_Stop

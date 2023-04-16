@@ -70,19 +70,26 @@ func FsmTest(
 				if eObj.Floor == btnEvent.Floor {
 					doorTimer.Reset(config.DoorOpenTime)
 					eObj.UpdateLights()
+					eObj.AddOrder(btnEvent)
+					chNewState <- *eObj
+					//eObj.ClearOrderFromBtn(btnEvent)
 
 				} else {
 					eObj.AddOrder(btnEvent)
+					chNewState <- *eObj
 				}
-				chNewState <- *eObj
+				// Denne må clere i message handler
+				
 				break
 			}
 
 		case remove := <-chRmButton:
+			log.Printf("Reasigne!!")
 			if printFSMStates {fmt.Print(("FSM remove \n"))}
 			switch eObj.State {
 			case elevator.Idle:
 				eObj.UpdateLights()
+				eObj.ClearOrderFromBtn(remove)
 				chNewState <- *eObj
 				break
 
@@ -112,7 +119,7 @@ func FsmTest(
 					eObj.ClearOrderFromBtn(remove)
 					eObj.UpdateLights()
 				}
-				chNewState <- *eObj
+				//chNewState <- *eObj
 				break
 			}
 
@@ -201,6 +208,7 @@ func FsmTest(
 					doorTimer.Reset(config.DoorOpenTime)
 					break
 				}
+				log.Printf("Door timer!")
 				if eObj.Dir != elevio.MD_Stop {
 					eObj.ClearOrderAtFloorInDirection(eObj.Floor)
 					oldDir := eObj.Dir
@@ -255,7 +263,7 @@ func FsmTest(
 				
 			}
 		}
-		log.Printf("FSM orders%v\n", eObj.Orders)
+		log.Printf("FSM %s\n", eObj.String())
 		
 	}
 }
